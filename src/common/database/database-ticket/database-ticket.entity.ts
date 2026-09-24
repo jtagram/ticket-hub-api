@@ -2,9 +2,11 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Generated,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { TicketStatus } from '../ticket-status.enum';
 
 @Entity('database_tickets')
 export class DatabaseTicketEntity {
@@ -12,6 +14,7 @@ export class DatabaseTicketEntity {
   declare id: number;
 
   @Column({ unique: true })
+  @Generated('increment')
   declare number: number;
 
   @Column({ length: 50 })
@@ -26,8 +29,8 @@ export class DatabaseTicketEntity {
   @Column({ length: 500 })
   declare subject: string;
 
-  @Column({ length: 50 })
-  declare status: string;
+  @Column({ type: 'enum', enum: TicketStatus })
+  declare status: TicketStatus;
 
   @Column({ length: 500 })
   declare description: string;
@@ -61,11 +64,6 @@ export class DatabaseTicketEntity {
 export class DatabaseTicketEntityBuilder {
   private readonly entity = new DatabaseTicketEntity();
 
-  withNumber(number: number): this {
-    this.entity.number = number;
-    return this;
-  }
-
   withInformer(informer: string): this {
     this.entity.informer = informer;
     return this;
@@ -86,7 +84,7 @@ export class DatabaseTicketEntityBuilder {
     return this;
   }
 
-  withStatus(status: string): this {
+  withStatus(status: TicketStatus): this {
     this.entity.status = status;
     return this;
   }
@@ -123,7 +121,6 @@ export class DatabaseTicketEntityBuilder {
 
   build(): DatabaseTicketEntity {
     const requiredFields: Array<keyof DatabaseTicketEntity> = [
-      'number',
       'informer',
       'assignee',
       'department',

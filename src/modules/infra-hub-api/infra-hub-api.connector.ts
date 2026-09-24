@@ -1,0 +1,70 @@
+import { Injectable } from '@nestjs/common';
+import { HttpService } from '@nestjs/axios';
+import { ConfigService } from '@nestjs/config';
+import { firstValueFrom } from 'rxjs';
+import {
+  InfraHubApiResponse,
+  ManageCommandRequest,
+  ManageDatabaseRequest,
+  ManageKubernetesManifestRequest,
+} from './infra-hub-api.types';
+
+@Injectable()
+export class InfraHubApiConnector {
+  constructor(
+    private readonly httpService: HttpService,
+    private readonly configService: ConfigService,
+  ) {}
+
+  private get baseUrl(): string {
+    return this.configService.get<string>('INFRA_HUB_API_URL')!;
+  }
+
+  async manageServerCommand(
+    body: ManageCommandRequest,
+  ): Promise<InfraHubApiResponse> {
+    const response = await firstValueFrom(
+      this.httpService.post<InfraHubApiResponse>(
+        `${this.baseUrl}/server-hub-api/manage-server`,
+        body,
+      ),
+    );
+    return response.data;
+  }
+
+  async manageKubernetesManifest(
+    body: ManageKubernetesManifestRequest,
+  ): Promise<InfraHubApiResponse> {
+    const response = await firstValueFrom(
+      this.httpService.post<InfraHubApiResponse>(
+        `${this.baseUrl}/kubernates-hub-api/manage-manifest`,
+        body,
+      ),
+    );
+    return response.data;
+  }
+
+  async manageKubernetesCommand(
+    body: ManageCommandRequest,
+  ): Promise<InfraHubApiResponse> {
+    const response = await firstValueFrom(
+      this.httpService.post<InfraHubApiResponse>(
+        `${this.baseUrl}/kubernates-hub-api/manage-server`,
+        body,
+      ),
+    );
+    return response.data;
+  }
+
+  async manageDatabase(
+    body: ManageDatabaseRequest,
+  ): Promise<InfraHubApiResponse> {
+    const response = await firstValueFrom(
+      this.httpService.post<InfraHubApiResponse>(
+        `${this.baseUrl}/database-hub-api/manage-database`,
+        body,
+      ),
+    );
+    return response.data;
+  }
+}
