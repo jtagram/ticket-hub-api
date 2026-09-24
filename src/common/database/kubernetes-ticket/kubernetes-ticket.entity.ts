@@ -37,9 +37,7 @@ export class KubernetesTicketEntity {
   @Column({ length: 500 })
   declare description: string;
 
-  // Holds the manifest YAML when executionType is MANIFEST, or an
-  // Ansible-style YAML playbook when executionType is OTHER (sent as-is
-  // in the "command" field to /kubernates-hub-api/manage-server).
+
   @Column('text', { name: 'code_yaml' })
   declare codeYaml: string;
 
@@ -53,11 +51,9 @@ export class KubernetesTicketEntity {
   })
   declare executionType: KubernetesExecutionType;
 
-  // Only set when executionType is MANIFEST.
   @Column({ length: 50, nullable: true })
   declare namespace?: string;
 
-  // Only set when executionType is MANIFEST.
   @Column({ type: 'enum', enum: KubernetesTicketAction, nullable: true })
   declare action?: KubernetesTicketAction;
 
