@@ -15,4 +15,14 @@ export class KubernetesTicketsRepository {
   ): Promise<KubernetesTicketEntity> {
     return this.repository.save(ticket);
   }
+
+  async findAll(): Promise<KubernetesTicketEntity[]> {
+    return this.repository.find();
+  }
+
+  async findByNumber(
+    number: number,
+  ): Promise<KubernetesTicketEntity | null> {
+    return this.repository.findOneBy({ number });
+  }
 }

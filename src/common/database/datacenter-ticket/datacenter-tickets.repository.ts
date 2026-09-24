@@ -15,4 +15,14 @@ export class DatacenterTicketsRepository {
   ): Promise<DatacenterTicketEntity> {
     return this.repository.save(ticket);
   }
+
+  async findAll(): Promise<DatacenterTicketEntity[]> {
+    return this.repository.find();
+  }
+
+  async findByNumber(
+    number: number,
+  ): Promise<DatacenterTicketEntity | null> {
+    return this.repository.findOneBy({ number });
+  }
 }

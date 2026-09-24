@@ -13,4 +13,14 @@ export class DatabaseTicketsRepository {
   async create(ticket: DatabaseTicketEntity): Promise<DatabaseTicketEntity> {
     return this.repository.save(ticket);
   }
+
+  async findAll(): Promise<DatabaseTicketEntity[]> {
+    return this.repository.find();
+  }
+
+  async findByNumber(
+    number: number,
+  ): Promise<DatabaseTicketEntity | null> {
+    return this.repository.findOneBy({ number });
+  }
 }

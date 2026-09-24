@@ -7,6 +7,8 @@ import { FilterModule } from './common/filter/filter.module';
 import { LoggerModule } from './instrument/logger/logger.module';
 import { InfraHubApiModule } from './modules/infra-hub-api/infra-hub-api.module';
 import { CreateTicketModule } from './modules/create-ticket/create-ticket.module';
+import { SearchTicketModule } from './modules/search-ticket/search-ticket.module';
+import { UpdateTicketModule } from './modules/update-ticket/update-ticket.module';
 
 @Module({
   imports: [
@@ -16,6 +18,8 @@ import { CreateTicketModule } from './modules/create-ticket/create-ticket.module
     FilterModule,
     InfraHubApiModule,
     CreateTicketModule,
+    SearchTicketModule,
+    UpdateTicketModule,
   ],
   controllers: [AppController],
   providers: [AppService],
