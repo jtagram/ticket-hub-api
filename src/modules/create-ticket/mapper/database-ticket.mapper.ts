@@ -26,6 +26,7 @@ export class DatabaseTicketMapper {
     return {
       numberOfTickets: ticket.number,
       namespace: ticket.dbNamespace,
+      deployment: ticket.dbDeployment,
       dbName: ticket.dbName,
       sqlCode: ticket.sqlCode,
     };

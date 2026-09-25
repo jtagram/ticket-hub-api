@@ -29,6 +29,7 @@ export interface ManageKubernetesManifestRequest {
 export interface ManageDatabaseRequest {
   numberOfTickets: number;
   namespace: string;
+  deployment: string;
   dbName: string;
   sqlCode: string;
 }
