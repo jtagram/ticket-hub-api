@@ -10,6 +10,13 @@ export class UpdateTicketController {
     return this.updateTicketService.approveDatabaseTicket(number);
   }
 
+  @Patch('database/provisioning/:number/approve')
+  approveDatabaseProvisioningTicket(
+    @Param('number', ParseIntPipe) number: number,
+  ) {
+    return this.updateTicketService.approveDatabaseProvisioningTicket(number);
+  }
+
   @Patch('datacenter/:number/approve')
   approveDatacenterTicket(@Param('number', ParseIntPipe) number: number) {
     return this.updateTicketService.approveDatacenterTicket(number);
@@ -23,6 +30,13 @@ export class UpdateTicketController {
   @Patch('database/:number/reject')
   rejectDatabaseTicket(@Param('number', ParseIntPipe) number: number) {
     return this.updateTicketService.rejectDatabaseTicket(number);
+  }
+
+  @Patch('database/provisioning/:number/reject')
+  rejectDatabaseProvisioningTicket(
+    @Param('number', ParseIntPipe) number: number,
+  ) {
+    return this.updateTicketService.rejectDatabaseProvisioningTicket(number);
   }
 
   @Patch('datacenter/:number/reject')

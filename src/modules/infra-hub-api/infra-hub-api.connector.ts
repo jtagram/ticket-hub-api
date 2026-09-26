@@ -3,6 +3,7 @@ import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 import {
+  CreateDatabaseRequest,
   InfraHubApiResponse,
   ListDatabasesResponse,
   ListDeploymentsResponse,
@@ -64,6 +65,18 @@ export class InfraHubApiConnector {
     const response = await firstValueFrom(
       this.httpService.post<InfraHubApiResponse>(
         `${this.baseUrl}/database-hub-api/manage-database`,
+        body,
+      ),
+    );
+    return response.data;
+  }
+
+  async createDatabase(
+    body: CreateDatabaseRequest,
+  ): Promise<InfraHubApiResponse> {
+    const response = await firstValueFrom(
+      this.httpService.post<InfraHubApiResponse>(
+        `${this.baseUrl}/database-hub-api/create-database`,
         body,
       ),
     );

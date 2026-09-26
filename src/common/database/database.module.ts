@@ -5,18 +5,22 @@ import { DatacenterTicketEntity } from './datacenter-ticket/datacenter-ticket.en
 import { DatacenterTicketsRepository } from './datacenter-ticket/datacenter-tickets.repository';
 import { DatabaseTicketEntity } from './database-ticket/database-ticket.entity';
 import { DatabaseTicketsRepository } from './database-ticket/database-tickets.repository';
+import { DatabaseProvisioningTicketEntity } from './database-provisioning-ticket/database-provisioning-ticket.entity';
+import { DatabaseProvisioningTicketsRepository } from './database-provisioning-ticket/database-provisioning-tickets.repository';
 import { KubernetesTicketEntity } from './kubernetes-ticket/kubernetes-ticket.entity';
 import { KubernetesTicketsRepository } from './kubernetes-ticket/kubernetes-tickets.repository';
 
 const entities = [
   DatacenterTicketEntity,
   DatabaseTicketEntity,
+  DatabaseProvisioningTicketEntity,
   KubernetesTicketEntity,
 ];
 
 const repositories = [
   DatacenterTicketsRepository,
   DatabaseTicketsRepository,
+  DatabaseProvisioningTicketsRepository,
   KubernetesTicketsRepository,
 ];
 

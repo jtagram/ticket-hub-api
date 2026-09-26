@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InfraHubApiConnector } from './infra-hub-api.connector';
 import {
+  CreateDatabaseRequest,
   InfraHubApiResponse,
   ListDatabasesResponse,
   ListDeploymentsResponse,
@@ -35,6 +36,12 @@ export class InfraHubApiService {
     request: ManageDatabaseRequest,
   ): Promise<InfraHubApiResponse> {
     return this.infraHubApiConnector.manageDatabase(request);
+  }
+
+  async createDatabase(
+    request: CreateDatabaseRequest,
+  ): Promise<InfraHubApiResponse> {
+    return this.infraHubApiConnector.createDatabase(request);
   }
 
   async listDeployments(namespace: string): Promise<ListDeploymentsResponse> {

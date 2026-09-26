@@ -34,6 +34,13 @@ export interface ManageDatabaseRequest {
   sqlCode: string;
 }
 
+export interface CreateDatabaseRequest {
+  numberOfTickets: number;
+  namespace: string;
+  deployment: string;
+  dbName: string;
+}
+
 export interface ListDeploymentsResponse {
   deployments: string[];
 }
