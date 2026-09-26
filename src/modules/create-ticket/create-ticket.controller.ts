@@ -1,6 +1,6 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { CreateTicketService } from './create-ticket.service';
-import { CreateDatabaseTicketDto } from './dto/create-database-ticket.dto';
+import { CreateDatabaseManagementTicketDto } from './dto/create-database-management-ticket.dto';
 import { CreateDatabaseProvisioningTicketDto } from './dto/create-database-provisioning-ticket.dto';
 import { CreateDatacenterTicketDto } from './dto/create-datacenter-ticket.dto';
 import { CreateKubernetesManifestTicketDto } from './dto/create-kubernetes-manifest-ticket.dto';
@@ -10,10 +10,12 @@ import { CreateKubernetesCommandTicketDto } from './dto/create-kubernetes-comman
 export class CreateTicketController {
   constructor(private readonly createTicketService: CreateTicketService) {}
 
-  @Post('database')
+  @Post('database/management')
   @HttpCode(HttpStatus.CREATED)
-  createDatabaseTicket(@Body() dto: CreateDatabaseTicketDto) {
-    return this.createTicketService.createDatabaseTicket(dto);
+  createDatabaseManagementTicket(
+    @Body() dto: CreateDatabaseManagementTicketDto,
+  ) {
+    return this.createTicketService.createDatabaseManagementTicket(dto);
   }
 
   @Post('database/provisioning')

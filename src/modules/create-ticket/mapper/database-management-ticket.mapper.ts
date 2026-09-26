@@ -1,11 +1,13 @@
-import { DatabaseTicketEntity } from '../../../common/database/database-ticket/database-ticket.entity';
+import { DatabaseManagementTicketEntity } from '../../../common/database/database-management-ticket/database-management-ticket.entity';
 import { TicketStatus } from '../../../common/database/ticket-status.enum';
 import { ManageDatabaseRequest } from '../../infra-hub-api/infra-hub-api.types';
-import { CreateDatabaseTicketDto } from '../dto/create-database-ticket.dto';
+import { CreateDatabaseManagementTicketDto } from '../dto/create-database-management-ticket.dto';
 
-export class DatabaseTicketMapper {
-  static toEntity(dto: CreateDatabaseTicketDto): DatabaseTicketEntity {
-    return DatabaseTicketEntity.builder()
+export class DatabaseManagementTicketMapper {
+  static toEntity(
+    dto: CreateDatabaseManagementTicketDto,
+  ): DatabaseManagementTicketEntity {
+    return DatabaseManagementTicketEntity.builder()
       .withInformer(dto.informer)
       .withAssignee(dto.assignee)
       .withDepartment(dto.department)
@@ -21,7 +23,7 @@ export class DatabaseTicketMapper {
   }
 
   static toManageDatabaseRequest(
-    ticket: DatabaseTicketEntity,
+    ticket: DatabaseManagementTicketEntity,
   ): ManageDatabaseRequest {
     return {
       numberOfTickets: ticket.number,

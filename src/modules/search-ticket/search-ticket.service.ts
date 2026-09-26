@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { DatabaseTicketEntity } from '../../common/database/database-ticket/database-ticket.entity';
-import { DatabaseTicketsRepository } from '../../common/database/database-ticket/database-tickets.repository';
+import { DatabaseManagementTicketEntity } from '../../common/database/database-management-ticket/database-management-ticket.entity';
+import { DatabaseManagementTicketsRepository } from '../../common/database/database-management-ticket/database-management-tickets.repository';
 import { DatacenterTicketEntity } from '../../common/database/datacenter-ticket/datacenter-ticket.entity';
 import { DatacenterTicketsRepository } from '../../common/database/datacenter-ticket/datacenter-tickets.repository';
 import { KubernetesManifestTicketEntity } from '../../common/database/kubernetes-manifest-ticket/kubernetes-manifest-ticket.entity';
@@ -11,14 +11,16 @@ import { KubernetesCommandTicketsRepository } from '../../common/database/kubern
 @Injectable()
 export class SearchTicketService {
   constructor(
-    private readonly databaseTicketsRepository: DatabaseTicketsRepository,
+    private readonly databaseManagementTicketsRepository: DatabaseManagementTicketsRepository,
     private readonly datacenterTicketsRepository: DatacenterTicketsRepository,
     private readonly kubernetesManifestTicketsRepository: KubernetesManifestTicketsRepository,
     private readonly kubernetesCommandTicketsRepository: KubernetesCommandTicketsRepository,
   ) {}
 
-  async findAllDatabaseTickets(): Promise<DatabaseTicketEntity[]> {
-    return this.databaseTicketsRepository.findAll();
+  async findAllDatabaseManagementTickets(): Promise<
+    DatabaseManagementTicketEntity[]
+  > {
+    return this.databaseManagementTicketsRepository.findAll();
   }
 
   async findAllDatacenterTickets(): Promise<DatacenterTicketEntity[]> {
@@ -37,13 +39,14 @@ export class SearchTicketService {
     return this.kubernetesCommandTicketsRepository.findAll();
   }
 
-  async findDatabaseTicketByNumber(
+  async findDatabaseManagementTicketByNumber(
     number: number,
-  ): Promise<DatabaseTicketEntity> {
-    const ticket = await this.databaseTicketsRepository.findByNumber(number);
+  ): Promise<DatabaseManagementTicketEntity> {
+    const ticket =
+      await this.databaseManagementTicketsRepository.findByNumber(number);
     if (!ticket) {
       throw new NotFoundException(
-        `Database ticket with number ${number} not found`,
+        `Database management ticket with number ${number} not found`,
       );
     }
     return ticket;

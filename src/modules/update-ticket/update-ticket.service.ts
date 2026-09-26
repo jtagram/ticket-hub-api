@@ -1,6 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { DatabaseTicketEntity } from '../../common/database/database-ticket/database-ticket.entity';
-import { DatabaseTicketsRepository } from '../../common/database/database-ticket/database-tickets.repository';
+import { DatabaseManagementTicketEntity } from '../../common/database/database-management-ticket/database-management-ticket.entity';
+import { DatabaseManagementTicketsRepository } from '../../common/database/database-management-ticket/database-management-tickets.repository';
 import { DatabaseProvisioningTicketEntity } from '../../common/database/database-provisioning-ticket/database-provisioning-ticket.entity';
 import { DatabaseProvisioningTicketsRepository } from '../../common/database/database-provisioning-ticket/database-provisioning-tickets.repository';
 import { DatacenterTicketEntity } from '../../common/database/datacenter-ticket/datacenter-ticket.entity';
@@ -11,7 +11,7 @@ import { KubernetesCommandTicketEntity } from '../../common/database/kubernetes-
 import { KubernetesCommandTicketsRepository } from '../../common/database/kubernetes-command-ticket/kubernetes-command-tickets.repository';
 import { TicketStatus } from '../../common/database/ticket-status.enum';
 import { InfraHubApiService } from '../infra-hub-api/infra-hub-api.service';
-import { DatabaseTicketMapper } from '../create-ticket/mapper/database-ticket.mapper';
+import { DatabaseManagementTicketMapper } from '../create-ticket/mapper/database-management-ticket.mapper';
 import { DatabaseProvisioningTicketMapper } from '../create-ticket/mapper/database-provisioning-ticket.mapper';
 import { DatacenterTicketMapper } from '../create-ticket/mapper/datacenter-ticket.mapper';
 import { KubernetesManifestTicketMapper } from '../create-ticket/mapper/kubernetes-manifest-ticket.mapper';
@@ -20,7 +20,7 @@ import { KubernetesCommandTicketMapper } from '../create-ticket/mapper/kubernete
 @Injectable()
 export class UpdateTicketService {
   constructor(
-    private readonly databaseTicketsRepository: DatabaseTicketsRepository,
+    private readonly databaseManagementTicketsRepository: DatabaseManagementTicketsRepository,
     private readonly databaseProvisioningTicketsRepository: DatabaseProvisioningTicketsRepository,
     private readonly datacenterTicketsRepository: DatacenterTicketsRepository,
     private readonly kubernetesManifestTicketsRepository: KubernetesManifestTicketsRepository,
@@ -28,22 +28,25 @@ export class UpdateTicketService {
     private readonly infraHubApiService: InfraHubApiService,
   ) {}
 
-  async approveDatabaseTicket(number: number): Promise<DatabaseTicketEntity> {
-    const ticket = await this.databaseTicketsRepository.findByNumber(number);
+  async approveDatabaseManagementTicket(
+    number: number,
+  ): Promise<DatabaseManagementTicketEntity> {
+    const ticket =
+      await this.databaseManagementTicketsRepository.findByNumber(number);
     if (!ticket) {
       throw new NotFoundException(
-        `Database ticket with number ${number} not found`,
+        `Database management ticket with number ${number} not found`,
       );
     }
     this.assertOpen(ticket.status, number, 'approved');
 
     const { executionResult } = await this.infraHubApiService.manageDatabase(
-      DatabaseTicketMapper.toManageDatabaseRequest(ticket),
+      DatabaseManagementTicketMapper.toManageDatabaseRequest(ticket),
     );
 
     ticket.status = TicketStatus.APPROVED;
     ticket.response = JSON.stringify(executionResult);
-    return this.databaseTicketsRepository.create(ticket);
+    return this.databaseManagementTicketsRepository.create(ticket);
   }
 
   async approveDatabaseProvisioningTicket(
@@ -137,17 +140,20 @@ export class UpdateTicketService {
     return this.kubernetesCommandTicketsRepository.create(ticket);
   }
 
-  async rejectDatabaseTicket(number: number): Promise<DatabaseTicketEntity> {
-    const ticket = await this.databaseTicketsRepository.findByNumber(number);
+  async rejectDatabaseManagementTicket(
+    number: number,
+  ): Promise<DatabaseManagementTicketEntity> {
+    const ticket =
+      await this.databaseManagementTicketsRepository.findByNumber(number);
     if (!ticket) {
       throw new NotFoundException(
-        `Database ticket with number ${number} not found`,
+        `Database management ticket with number ${number} not found`,
       );
     }
     this.assertOpen(ticket.status, number, 'rejected');
 
     ticket.status = TicketStatus.REJECTED;
-    return this.databaseTicketsRepository.create(ticket);
+    return this.databaseManagementTicketsRepository.create(ticket);
   }
 
   async rejectDatabaseProvisioningTicket(

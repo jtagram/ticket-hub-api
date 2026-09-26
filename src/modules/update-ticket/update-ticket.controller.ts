@@ -5,9 +5,11 @@ import { UpdateTicketService } from './update-ticket.service';
 export class UpdateTicketController {
   constructor(private readonly updateTicketService: UpdateTicketService) {}
 
-  @Patch('database/:number/approve')
-  approveDatabaseTicket(@Param('number', ParseIntPipe) number: number) {
-    return this.updateTicketService.approveDatabaseTicket(number);
+  @Patch('database/management/:number/approve')
+  approveDatabaseManagementTicket(
+    @Param('number', ParseIntPipe) number: number,
+  ) {
+    return this.updateTicketService.approveDatabaseManagementTicket(number);
   }
 
   @Patch('database/provisioning/:number/approve')
@@ -36,9 +38,11 @@ export class UpdateTicketController {
     return this.updateTicketService.approveKubernetesCommandTicket(number);
   }
 
-  @Patch('database/:number/reject')
-  rejectDatabaseTicket(@Param('number', ParseIntPipe) number: number) {
-    return this.updateTicketService.rejectDatabaseTicket(number);
+  @Patch('database/management/:number/reject')
+  rejectDatabaseManagementTicket(
+    @Param('number', ParseIntPipe) number: number,
+  ) {
+    return this.updateTicketService.rejectDatabaseManagementTicket(number);
   }
 
   @Patch('database/provisioning/:number/reject')

@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
 
-export class CreateDatabaseTicketDto {
+export class CreateDatabaseManagementTicketDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(50)

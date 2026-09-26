@@ -5,9 +5,9 @@ import { SearchTicketService } from './search-ticket.service';
 export class SearchTicketController {
   constructor(private readonly searchTicketService: SearchTicketService) {}
 
-  @Get('database')
-  findAllDatabaseTickets() {
-    return this.searchTicketService.findAllDatabaseTickets();
+  @Get('database/management')
+  findAllDatabaseManagementTickets() {
+    return this.searchTicketService.findAllDatabaseManagementTickets();
   }
 
   @Get('datacenter')
@@ -25,11 +25,13 @@ export class SearchTicketController {
     return this.searchTicketService.findAllKubernetesCommandTickets();
   }
 
-  @Get('database/:number')
-  findDatabaseTicketByNumber(
+  @Get('database/management/:number')
+  findDatabaseManagementTicketByNumber(
     @Param('number', ParseIntPipe) number: number,
   ) {
-    return this.searchTicketService.findDatabaseTicketByNumber(number);
+    return this.searchTicketService.findDatabaseManagementTicketByNumber(
+      number,
+    );
   }
 
   @Get('datacenter/:number')

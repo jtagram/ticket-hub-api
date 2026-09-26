@@ -8,8 +8,8 @@ import {
 } from 'typeorm';
 import { TicketStatus } from '../ticket-status.enum';
 
-@Entity('database_tickets')
-export class DatabaseTicketEntity {
+@Entity('database_management_tickets')
+export class DatabaseManagementTicketEntity {
   @PrimaryGeneratedColumn()
   declare id: number;
 
@@ -56,13 +56,13 @@ export class DatabaseTicketEntity {
   @UpdateDateColumn({ name: 'updated_at' })
   declare updatedAt: Date;
 
-  static builder(): DatabaseTicketEntityBuilder {
-    return new DatabaseTicketEntityBuilder();
+  static builder(): DatabaseManagementTicketEntityBuilder {
+    return new DatabaseManagementTicketEntityBuilder();
   }
 }
 
-export class DatabaseTicketEntityBuilder {
-  private readonly entity = new DatabaseTicketEntity();
+export class DatabaseManagementTicketEntityBuilder {
+  private readonly entity = new DatabaseManagementTicketEntity();
 
   withInformer(informer: string): this {
     this.entity.informer = informer;
@@ -119,8 +119,8 @@ export class DatabaseTicketEntityBuilder {
     return this;
   }
 
-  build(): DatabaseTicketEntity {
-    const requiredFields: Array<keyof DatabaseTicketEntity> = [
+  build(): DatabaseManagementTicketEntity {
+    const requiredFields: Array<keyof DatabaseManagementTicketEntity> = [
       'informer',
       'assignee',
       'department',
@@ -139,7 +139,7 @@ export class DatabaseTicketEntityBuilder {
     );
     if (missingField) {
       throw new Error(
-        `Cannot build DatabaseTicketEntity: missing required field "${missingField}"`,
+        `Cannot build DatabaseManagementTicketEntity: missing required field "${missingField}"`,
       );
     }
 
