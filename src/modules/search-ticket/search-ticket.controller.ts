@@ -10,6 +10,11 @@ export class SearchTicketController {
     return this.searchTicketService.findAllDatabaseManagementTickets();
   }
 
+  @Get('database/provisioning')
+  findAllDatabaseProvisioningTickets() {
+    return this.searchTicketService.findAllDatabaseProvisioningTickets();
+  }
+
   @Get('datacenter')
   findAllDatacenterTickets() {
     return this.searchTicketService.findAllDatacenterTickets();
@@ -30,6 +35,15 @@ export class SearchTicketController {
     @Param('number', ParseIntPipe) number: number,
   ) {
     return this.searchTicketService.findDatabaseManagementTicketByNumber(
+      number,
+    );
+  }
+
+  @Get('database/provisioning/:number')
+  findDatabaseProvisioningTicketByNumber(
+    @Param('number', ParseIntPipe) number: number,
+  ) {
+    return this.searchTicketService.findDatabaseProvisioningTicketByNumber(
       number,
     );
   }

@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DatabaseManagementTicketEntity } from '../../common/database/database-management-ticket/database-management-ticket.entity';
 import { DatabaseManagementTicketsRepository } from '../../common/database/database-management-ticket/database-management-tickets.repository';
+import { DatabaseProvisioningTicketEntity } from '../../common/database/database-provisioning-ticket/database-provisioning-ticket.entity';
+import { DatabaseProvisioningTicketsRepository } from '../../common/database/database-provisioning-ticket/database-provisioning-tickets.repository';
 import { DatacenterTicketEntity } from '../../common/database/datacenter-ticket/datacenter-ticket.entity';
 import { DatacenterTicketsRepository } from '../../common/database/datacenter-ticket/datacenter-tickets.repository';
 import { KubernetesManifestTicketEntity } from '../../common/database/kubernetes-manifest-ticket/kubernetes-manifest-ticket.entity';
@@ -12,6 +14,7 @@ import { KubernetesCommandTicketsRepository } from '../../common/database/kubern
 export class SearchTicketService {
   constructor(
     private readonly databaseManagementTicketsRepository: DatabaseManagementTicketsRepository,
+    private readonly databaseProvisioningTicketsRepository: DatabaseProvisioningTicketsRepository,
     private readonly datacenterTicketsRepository: DatacenterTicketsRepository,
     private readonly kubernetesManifestTicketsRepository: KubernetesManifestTicketsRepository,
     private readonly kubernetesCommandTicketsRepository: KubernetesCommandTicketsRepository,
@@ -21,6 +24,12 @@ export class SearchTicketService {
     DatabaseManagementTicketEntity[]
   > {
     return this.databaseManagementTicketsRepository.findAll();
+  }
+
+  async findAllDatabaseProvisioningTickets(): Promise<
+    DatabaseProvisioningTicketEntity[]
+  > {
+    return this.databaseProvisioningTicketsRepository.findAll();
   }
 
   async findAllDatacenterTickets(): Promise<DatacenterTicketEntity[]> {
@@ -47,6 +56,19 @@ export class SearchTicketService {
     if (!ticket) {
       throw new NotFoundException(
         `Database management ticket with number ${number} not found`,
+      );
+    }
+    return ticket;
+  }
+
+  async findDatabaseProvisioningTicketByNumber(
+    number: number,
+  ): Promise<DatabaseProvisioningTicketEntity> {
+    const ticket =
+      await this.databaseProvisioningTicketsRepository.findByNumber(number);
+    if (!ticket) {
+      throw new NotFoundException(
+        `Database provisioning ticket with number ${number} not found`,
       );
     }
     return ticket;
