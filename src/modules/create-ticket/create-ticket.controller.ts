@@ -1,4 +1,6 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { Role } from '../../common/roles/role.enum';
+import { Roles } from '../../common/guards/roles.decorator';
 import { CreateTicketService } from './create-ticket.service';
 import { CreateDatabaseManagementTicketDto } from './dto/create-database-management-ticket.dto';
 import { CreateDatabaseProvisioningTicketDto } from './dto/create-database-provisioning-ticket.dto';
@@ -12,6 +14,7 @@ export class CreateTicketController {
 
   @Post('database/management')
   @HttpCode(HttpStatus.CREATED)
+  @Roles(Role.ADMIN, Role.DATABASE, Role.DATABASE_APPROVER)
   createDatabaseManagementTicket(
     @Body() dto: CreateDatabaseManagementTicketDto,
   ) {
@@ -20,6 +23,7 @@ export class CreateTicketController {
 
   @Post('database/provisioning')
   @HttpCode(HttpStatus.CREATED)
+  @Roles(Role.ADMIN, Role.DATABASE, Role.DATABASE_APPROVER)
   createDatabaseProvisioningTicket(
     @Body() dto: CreateDatabaseProvisioningTicketDto,
   ) {
@@ -28,12 +32,14 @@ export class CreateTicketController {
 
   @Post('server/management')
   @HttpCode(HttpStatus.CREATED)
+  @Roles(Role.ADMIN, Role.SERVER, Role.SERVER_APPROVER)
   createServerManagementTicket(@Body() dto: CreateServerManagementTicketDto) {
     return this.createTicketService.createServerManagementTicket(dto);
   }
 
   @Post('kubernetes/manifest')
   @HttpCode(HttpStatus.CREATED)
+  @Roles(Role.ADMIN, Role.KUBERNATES, Role.KUBERNATES_APPROVER)
   createKubernetesManifestTicket(
     @Body() dto: CreateKubernetesManifestTicketDto,
   ) {
@@ -42,6 +48,7 @@ export class CreateTicketController {
 
   @Post('kubernetes/kubectl')
   @HttpCode(HttpStatus.CREATED)
+  @Roles(Role.ADMIN, Role.KUBERNATES, Role.KUBERNATES_APPROVER)
   createKubectlCommandTicket(@Body() dto: CreateKubectlCommandTicketDto) {
     return this.createTicketService.createKubectlCommandTicket(dto);
   }

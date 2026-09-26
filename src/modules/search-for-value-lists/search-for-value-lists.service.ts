@@ -1,13 +1,21 @@
 import { Injectable } from '@nestjs/common';
+import { Role } from '../../common/roles/role.enum';
 import { IamApiService } from '../iam-api/iam-api.service';
 import { InfraHubApiService } from '../infra-hub-api/infra-hub-api.service';
 import { FindDatabaseDeploymentsDto } from './dto/find-database-deployments.dto';
 import { FindDatabaseNamesDto } from './dto/find-database-names.dto';
 import { ValueListItemResponse } from './value-list-item.response';
 
-/** The application whose ADMIN/APPROVER roles determine who can be a ticket assignee. */
+/** Anyone who can approve at least one ticket domain is a valid assignee --
+ * there's no single cross-domain APPROVER role anymore, so this lists every
+ * domain's approver role instead. */
 const TICKET_HUB_APPLICATION_NAME = 'ticket-hub';
-const ASSIGNEE_ROLES = ['ADMIN', 'APPROVER'];
+const ASSIGNEE_ROLES: Role[] = [
+  Role.ADMIN,
+  Role.DATABASE_APPROVER,
+  Role.SERVER_APPROVER,
+  Role.KUBERNATES_APPROVER,
+];
 
 @Injectable()
 export class SearchForValueListsService {
