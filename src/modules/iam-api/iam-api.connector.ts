@@ -1,0 +1,30 @@
+import { Injectable } from '@nestjs/common';
+import { HttpService } from '@nestjs/axios';
+import { ConfigService } from '@nestjs/config';
+import { firstValueFrom } from 'rxjs';
+import { InternalUserResponse } from './iam-api.types';
+
+@Injectable()
+export class IamApiConnector {
+  constructor(
+    private readonly httpService: HttpService,
+    private readonly configService: ConfigService,
+  ) {}
+
+  private get baseUrl(): string {
+    return this.configService.get<string>('IAM_API_URL')!;
+  }
+
+  async findInternalUsersByRole(
+    applicationName: string,
+    roles: string[],
+  ): Promise<InternalUserResponse[]> {
+    const response = await firstValueFrom(
+      this.httpService.get<InternalUserResponse[]>(
+        `${this.baseUrl}/internal-users/by-role`,
+        { params: { applicationName, roles: roles.join(',') } },
+      ),
+    );
+    return response.data;
+  }
+}

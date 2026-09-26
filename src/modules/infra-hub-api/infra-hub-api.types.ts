@@ -33,3 +33,11 @@ export interface ManageDatabaseRequest {
   dbName: string;
   sqlCode: string;
 }
+
+export interface ListDeploymentsResponse {
+  deployments: string[];
+}
+
+export interface ListDatabasesResponse {
+  databases: string[];
+}

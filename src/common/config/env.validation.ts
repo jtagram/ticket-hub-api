@@ -45,6 +45,10 @@ export class EnvironmentVariables {
   @IsString()
   @IsNotEmpty()
   INFRA_HUB_API_URL!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  IAM_API_URL!: string;
 }
 
 export function validate(

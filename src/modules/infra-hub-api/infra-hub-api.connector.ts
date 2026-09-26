@@ -4,6 +4,8 @@ import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 import {
   InfraHubApiResponse,
+  ListDatabasesResponse,
+  ListDeploymentsResponse,
   ManageCommandRequest,
   ManageDatabaseRequest,
   ManageKubernetesManifestRequest,
@@ -63,6 +65,29 @@ export class InfraHubApiConnector {
       this.httpService.post<InfraHubApiResponse>(
         `${this.baseUrl}/database-hub-api/manage-database`,
         body,
+      ),
+    );
+    return response.data;
+  }
+
+  async listDeployments(namespace: string): Promise<ListDeploymentsResponse> {
+    const response = await firstValueFrom(
+      this.httpService.get<ListDeploymentsResponse>(
+        `${this.baseUrl}/kubernates-hub-api/list-deployments`,
+        { params: { namespace } },
+      ),
+    );
+    return response.data;
+  }
+
+  async listDatabases(
+    namespace: string,
+    deployment: string,
+  ): Promise<ListDatabasesResponse> {
+    const response = await firstValueFrom(
+      this.httpService.get<ListDatabasesResponse>(
+        `${this.baseUrl}/database-hub-api/list-databases`,
+        { params: { namespace, deployment } },
       ),
     );
     return response.data;

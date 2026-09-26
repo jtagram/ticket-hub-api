@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { InfraHubApiConnector } from './infra-hub-api.connector';
 import {
   InfraHubApiResponse,
+  ListDatabasesResponse,
+  ListDeploymentsResponse,
   ManageCommandRequest,
   ManageDatabaseRequest,
   ManageKubernetesManifestRequest,
@@ -33,5 +35,16 @@ export class InfraHubApiService {
     request: ManageDatabaseRequest,
   ): Promise<InfraHubApiResponse> {
     return this.infraHubApiConnector.manageDatabase(request);
+  }
+
+  async listDeployments(namespace: string): Promise<ListDeploymentsResponse> {
+    return this.infraHubApiConnector.listDeployments(namespace);
+  }
+
+  async listDatabases(
+    namespace: string,
+    deployment: string,
+  ): Promise<ListDatabasesResponse> {
+    return this.infraHubApiConnector.listDatabases(namespace, deployment);
   }
 }
