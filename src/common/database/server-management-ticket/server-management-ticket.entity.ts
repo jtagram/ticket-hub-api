@@ -8,8 +8,8 @@ import {
 } from 'typeorm';
 import { TicketStatus } from '../ticket-status.enum';
 
-@Entity('datacenter_tickets')
-export class DatacenterTicketEntity {
+@Entity('server_management_tickets')
+export class ServerManagementTicketEntity {
   @PrimaryGeneratedColumn()
   declare id: number;
 
@@ -47,13 +47,13 @@ export class DatacenterTicketEntity {
   @UpdateDateColumn({ name: 'updated_at' })
   declare updatedAt: Date;
 
-  static builder(): DatacenterTicketEntityBuilder {
-    return new DatacenterTicketEntityBuilder();
+  static builder(): ServerManagementTicketEntityBuilder {
+    return new ServerManagementTicketEntityBuilder();
   }
 }
 
-export class DatacenterTicketEntityBuilder {
-  private readonly entity = new DatacenterTicketEntity();
+export class ServerManagementTicketEntityBuilder {
+  private readonly entity = new ServerManagementTicketEntity();
 
   withInformer(informer: string): this {
     this.entity.informer = informer;
@@ -95,8 +95,8 @@ export class DatacenterTicketEntityBuilder {
     return this;
   }
 
-  build(): DatacenterTicketEntity {
-    const requiredFields: Array<keyof DatacenterTicketEntity> = [
+  build(): ServerManagementTicketEntity {
+    const requiredFields: Array<keyof ServerManagementTicketEntity> = [
       'informer',
       'assignee',
       'department',
@@ -112,7 +112,7 @@ export class DatacenterTicketEntityBuilder {
     );
     if (missingField) {
       throw new Error(
-        `Cannot build DatacenterTicketEntity: missing required field "${missingField}"`,
+        `Cannot build ServerManagementTicketEntity: missing required field "${missingField}"`,
       );
     }
 

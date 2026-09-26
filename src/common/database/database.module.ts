@@ -1,8 +1,8 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { DatacenterTicketEntity } from './datacenter-ticket/datacenter-ticket.entity';
-import { DatacenterTicketsRepository } from './datacenter-ticket/datacenter-tickets.repository';
+import { ServerManagementTicketEntity } from './server-management-ticket/server-management-ticket.entity';
+import { ServerManagementTicketsRepository } from './server-management-ticket/server-management-tickets.repository';
 import { DatabaseManagementTicketEntity } from './database-management-ticket/database-management-ticket.entity';
 import { DatabaseManagementTicketsRepository } from './database-management-ticket/database-management-tickets.repository';
 import { DatabaseProvisioningTicketEntity } from './database-provisioning-ticket/database-provisioning-ticket.entity';
@@ -13,7 +13,7 @@ import { KubernetesCommandTicketEntity } from './kubernetes-command-ticket/kuber
 import { KubernetesCommandTicketsRepository } from './kubernetes-command-ticket/kubernetes-command-tickets.repository';
 
 const entities = [
-  DatacenterTicketEntity,
+  ServerManagementTicketEntity,
   DatabaseManagementTicketEntity,
   DatabaseProvisioningTicketEntity,
   KubernetesManifestTicketEntity,
@@ -21,7 +21,7 @@ const entities = [
 ];
 
 const repositories = [
-  DatacenterTicketsRepository,
+  ServerManagementTicketsRepository,
   DatabaseManagementTicketsRepository,
   DatabaseProvisioningTicketsRepository,
   KubernetesManifestTicketsRepository,

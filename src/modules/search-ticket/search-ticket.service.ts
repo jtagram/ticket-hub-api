@@ -3,8 +3,8 @@ import { DatabaseManagementTicketEntity } from '../../common/database/database-m
 import { DatabaseManagementTicketsRepository } from '../../common/database/database-management-ticket/database-management-tickets.repository';
 import { DatabaseProvisioningTicketEntity } from '../../common/database/database-provisioning-ticket/database-provisioning-ticket.entity';
 import { DatabaseProvisioningTicketsRepository } from '../../common/database/database-provisioning-ticket/database-provisioning-tickets.repository';
-import { DatacenterTicketEntity } from '../../common/database/datacenter-ticket/datacenter-ticket.entity';
-import { DatacenterTicketsRepository } from '../../common/database/datacenter-ticket/datacenter-tickets.repository';
+import { ServerManagementTicketEntity } from '../../common/database/server-management-ticket/server-management-ticket.entity';
+import { ServerManagementTicketsRepository } from '../../common/database/server-management-ticket/server-management-tickets.repository';
 import { KubernetesManifestTicketEntity } from '../../common/database/kubernetes-manifest-ticket/kubernetes-manifest-ticket.entity';
 import { KubernetesManifestTicketsRepository } from '../../common/database/kubernetes-manifest-ticket/kubernetes-manifest-tickets.repository';
 import { KubernetesCommandTicketEntity } from '../../common/database/kubernetes-command-ticket/kubernetes-command-ticket.entity';
@@ -15,7 +15,7 @@ export class SearchTicketService {
   constructor(
     private readonly databaseManagementTicketsRepository: DatabaseManagementTicketsRepository,
     private readonly databaseProvisioningTicketsRepository: DatabaseProvisioningTicketsRepository,
-    private readonly datacenterTicketsRepository: DatacenterTicketsRepository,
+    private readonly serverManagementTicketsRepository: ServerManagementTicketsRepository,
     private readonly kubernetesManifestTicketsRepository: KubernetesManifestTicketsRepository,
     private readonly kubernetesCommandTicketsRepository: KubernetesCommandTicketsRepository,
   ) {}
@@ -32,8 +32,10 @@ export class SearchTicketService {
     return this.databaseProvisioningTicketsRepository.findAll();
   }
 
-  async findAllDatacenterTickets(): Promise<DatacenterTicketEntity[]> {
-    return this.datacenterTicketsRepository.findAll();
+  async findAllServerManagementTickets(): Promise<
+    ServerManagementTicketEntity[]
+  > {
+    return this.serverManagementTicketsRepository.findAll();
   }
 
   async findAllKubernetesManifestTickets(): Promise<
@@ -74,14 +76,14 @@ export class SearchTicketService {
     return ticket;
   }
 
-  async findDatacenterTicketByNumber(
+  async findServerManagementTicketByNumber(
     number: number,
-  ): Promise<DatacenterTicketEntity> {
+  ): Promise<ServerManagementTicketEntity> {
     const ticket =
-      await this.datacenterTicketsRepository.findByNumber(number);
+      await this.serverManagementTicketsRepository.findByNumber(number);
     if (!ticket) {
       throw new NotFoundException(
-        `Datacenter ticket with number ${number} not found`,
+        `Server management ticket with number ${number} not found`,
       );
     }
     return ticket;

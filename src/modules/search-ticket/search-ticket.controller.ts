@@ -15,9 +15,9 @@ export class SearchTicketController {
     return this.searchTicketService.findAllDatabaseProvisioningTickets();
   }
 
-  @Get('datacenter')
-  findAllDatacenterTickets() {
-    return this.searchTicketService.findAllDatacenterTickets();
+  @Get('server/management')
+  findAllServerManagementTickets() {
+    return this.searchTicketService.findAllServerManagementTickets();
   }
 
   @Get('kubernetes/manifest')
@@ -48,11 +48,13 @@ export class SearchTicketController {
     );
   }
 
-  @Get('datacenter/:number')
-  findDatacenterTicketByNumber(
+  @Get('server/management/:number')
+  findServerManagementTicketByNumber(
     @Param('number', ParseIntPipe) number: number,
   ) {
-    return this.searchTicketService.findDatacenterTicketByNumber(number);
+    return this.searchTicketService.findServerManagementTicketByNumber(
+      number,
+    );
   }
 
   @Get('kubernetes/manifest/:number')

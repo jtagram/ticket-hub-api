@@ -19,9 +19,11 @@ export class UpdateTicketController {
     return this.updateTicketService.approveDatabaseProvisioningTicket(number);
   }
 
-  @Patch('datacenter/:number/approve')
-  approveDatacenterTicket(@Param('number', ParseIntPipe) number: number) {
-    return this.updateTicketService.approveDatacenterTicket(number);
+  @Patch('server/management/:number/approve')
+  approveServerManagementTicket(
+    @Param('number', ParseIntPipe) number: number,
+  ) {
+    return this.updateTicketService.approveServerManagementTicket(number);
   }
 
   @Patch('kubernetes/manifest/:number/approve')
@@ -52,9 +54,9 @@ export class UpdateTicketController {
     return this.updateTicketService.rejectDatabaseProvisioningTicket(number);
   }
 
-  @Patch('datacenter/:number/reject')
-  rejectDatacenterTicket(@Param('number', ParseIntPipe) number: number) {
-    return this.updateTicketService.rejectDatacenterTicket(number);
+  @Patch('server/management/:number/reject')
+  rejectServerManagementTicket(@Param('number', ParseIntPipe) number: number) {
+    return this.updateTicketService.rejectServerManagementTicket(number);
   }
 
   @Patch('kubernetes/manifest/:number/reject')

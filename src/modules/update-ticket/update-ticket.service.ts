@@ -3,8 +3,8 @@ import { DatabaseManagementTicketEntity } from '../../common/database/database-m
 import { DatabaseManagementTicketsRepository } from '../../common/database/database-management-ticket/database-management-tickets.repository';
 import { DatabaseProvisioningTicketEntity } from '../../common/database/database-provisioning-ticket/database-provisioning-ticket.entity';
 import { DatabaseProvisioningTicketsRepository } from '../../common/database/database-provisioning-ticket/database-provisioning-tickets.repository';
-import { DatacenterTicketEntity } from '../../common/database/datacenter-ticket/datacenter-ticket.entity';
-import { DatacenterTicketsRepository } from '../../common/database/datacenter-ticket/datacenter-tickets.repository';
+import { ServerManagementTicketEntity } from '../../common/database/server-management-ticket/server-management-ticket.entity';
+import { ServerManagementTicketsRepository } from '../../common/database/server-management-ticket/server-management-tickets.repository';
 import { KubernetesManifestTicketEntity } from '../../common/database/kubernetes-manifest-ticket/kubernetes-manifest-ticket.entity';
 import { KubernetesManifestTicketsRepository } from '../../common/database/kubernetes-manifest-ticket/kubernetes-manifest-tickets.repository';
 import { KubernetesCommandTicketEntity } from '../../common/database/kubernetes-command-ticket/kubernetes-command-ticket.entity';
@@ -13,7 +13,7 @@ import { TicketStatus } from '../../common/database/ticket-status.enum';
 import { InfraHubApiService } from '../infra-hub-api/infra-hub-api.service';
 import { DatabaseManagementTicketMapper } from '../create-ticket/mapper/database-management-ticket.mapper';
 import { DatabaseProvisioningTicketMapper } from '../create-ticket/mapper/database-provisioning-ticket.mapper';
-import { DatacenterTicketMapper } from '../create-ticket/mapper/datacenter-ticket.mapper';
+import { ServerManagementTicketMapper } from '../create-ticket/mapper/server-management-ticket.mapper';
 import { KubernetesManifestTicketMapper } from '../create-ticket/mapper/kubernetes-manifest-ticket.mapper';
 import { KubernetesCommandTicketMapper } from '../create-ticket/mapper/kubernetes-command-ticket.mapper';
 
@@ -22,7 +22,7 @@ export class UpdateTicketService {
   constructor(
     private readonly databaseManagementTicketsRepository: DatabaseManagementTicketsRepository,
     private readonly databaseProvisioningTicketsRepository: DatabaseProvisioningTicketsRepository,
-    private readonly datacenterTicketsRepository: DatacenterTicketsRepository,
+    private readonly serverManagementTicketsRepository: ServerManagementTicketsRepository,
     private readonly kubernetesManifestTicketsRepository: KubernetesManifestTicketsRepository,
     private readonly kubernetesCommandTicketsRepository: KubernetesCommandTicketsRepository,
     private readonly infraHubApiService: InfraHubApiService,
@@ -70,26 +70,26 @@ export class UpdateTicketService {
     return this.databaseProvisioningTicketsRepository.create(ticket);
   }
 
-  async approveDatacenterTicket(
+  async approveServerManagementTicket(
     number: number,
-  ): Promise<DatacenterTicketEntity> {
+  ): Promise<ServerManagementTicketEntity> {
     const ticket =
-      await this.datacenterTicketsRepository.findByNumber(number);
+      await this.serverManagementTicketsRepository.findByNumber(number);
     if (!ticket) {
       throw new NotFoundException(
-        `Datacenter ticket with number ${number} not found`,
+        `Server management ticket with number ${number} not found`,
       );
     }
     this.assertOpen(ticket.status, number, 'approved');
 
     const { executionResult } =
       await this.infraHubApiService.manageServerCommand(
-        DatacenterTicketMapper.toManageServerCommandRequest(ticket),
+        ServerManagementTicketMapper.toManageServerCommandRequest(ticket),
       );
 
     ticket.status = TicketStatus.APPROVED;
     ticket.response = JSON.stringify(executionResult);
-    return this.datacenterTicketsRepository.create(ticket);
+    return this.serverManagementTicketsRepository.create(ticket);
   }
 
   async approveKubernetesManifestTicket(
@@ -172,20 +172,20 @@ export class UpdateTicketService {
     return this.databaseProvisioningTicketsRepository.create(ticket);
   }
 
-  async rejectDatacenterTicket(
+  async rejectServerManagementTicket(
     number: number,
-  ): Promise<DatacenterTicketEntity> {
+  ): Promise<ServerManagementTicketEntity> {
     const ticket =
-      await this.datacenterTicketsRepository.findByNumber(number);
+      await this.serverManagementTicketsRepository.findByNumber(number);
     if (!ticket) {
       throw new NotFoundException(
-        `Datacenter ticket with number ${number} not found`,
+        `Server management ticket with number ${number} not found`,
       );
     }
     this.assertOpen(ticket.status, number, 'rejected');
 
     ticket.status = TicketStatus.REJECTED;
-    return this.datacenterTicketsRepository.create(ticket);
+    return this.serverManagementTicketsRepository.create(ticket);
   }
 
   async rejectKubernetesManifestTicket(
