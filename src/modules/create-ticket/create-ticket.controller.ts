@@ -4,7 +4,7 @@ import { CreateDatabaseManagementTicketDto } from './dto/create-database-managem
 import { CreateDatabaseProvisioningTicketDto } from './dto/create-database-provisioning-ticket.dto';
 import { CreateServerManagementTicketDto } from './dto/create-server-management-ticket.dto';
 import { CreateKubernetesManifestTicketDto } from './dto/create-kubernetes-manifest-ticket.dto';
-import { CreateKubernetesCommandTicketDto } from './dto/create-kubernetes-command-ticket.dto';
+import { CreateKubectlCommandTicketDto } from './dto/create-kubectl-command-ticket.dto';
 
 @Controller('tickets')
 export class CreateTicketController {
@@ -40,11 +40,9 @@ export class CreateTicketController {
     return this.createTicketService.createKubernetesManifestTicket(dto);
   }
 
-  @Post('kubernetes/command')
+  @Post('kubernetes/kubectl')
   @HttpCode(HttpStatus.CREATED)
-  createKubernetesCommandTicket(
-    @Body() dto: CreateKubernetesCommandTicketDto,
-  ) {
-    return this.createTicketService.createKubernetesCommandTicket(dto);
+  createKubectlCommandTicket(@Body() dto: CreateKubectlCommandTicketDto) {
+    return this.createTicketService.createKubectlCommandTicket(dto);
   }
 }

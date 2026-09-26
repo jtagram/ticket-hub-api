@@ -9,15 +9,15 @@ import { DatabaseProvisioningTicketEntity } from './database-provisioning-ticket
 import { DatabaseProvisioningTicketsRepository } from './database-provisioning-ticket/database-provisioning-tickets.repository';
 import { KubernetesManifestTicketEntity } from './kubernetes-manifest-ticket/kubernetes-manifest-ticket.entity';
 import { KubernetesManifestTicketsRepository } from './kubernetes-manifest-ticket/kubernetes-manifest-tickets.repository';
-import { KubernetesCommandTicketEntity } from './kubernetes-command-ticket/kubernetes-command-ticket.entity';
-import { KubernetesCommandTicketsRepository } from './kubernetes-command-ticket/kubernetes-command-tickets.repository';
+import { KubectlCommandTicketEntity } from './kubectl-command-ticket/kubectl-command-ticket.entity';
+import { KubectlCommandTicketsRepository } from './kubectl-command-ticket/kubectl-command-tickets.repository';
 
 const entities = [
   ServerManagementTicketEntity,
   DatabaseManagementTicketEntity,
   DatabaseProvisioningTicketEntity,
   KubernetesManifestTicketEntity,
-  KubernetesCommandTicketEntity,
+  KubectlCommandTicketEntity,
 ];
 
 const repositories = [
@@ -25,7 +25,7 @@ const repositories = [
   DatabaseManagementTicketsRepository,
   DatabaseProvisioningTicketsRepository,
   KubernetesManifestTicketsRepository,
-  KubernetesCommandTicketsRepository,
+  KubectlCommandTicketsRepository,
 ];
 
 @Global()

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InfraHubApiConnector } from './infra-hub-api.connector';
 import {
   CreateDatabaseRequest,
+  ExecuteKubectlCommandRequest,
   InfraHubApiResponse,
   ListDatabasesResponse,
   ListDeploymentsResponse,
@@ -26,10 +27,10 @@ export class InfraHubApiService {
     return this.infraHubApiConnector.manageKubernetesManifest(request);
   }
 
-  async manageKubernetesCommand(
-    request: ManageCommandRequest,
+  async executeKubectlCommand(
+    request: ExecuteKubectlCommandRequest,
   ): Promise<InfraHubApiResponse> {
-    return this.infraHubApiConnector.manageKubernetesCommand(request);
+    return this.infraHubApiConnector.executeKubectlCommand(request);
   }
 
   async manageDatabase(

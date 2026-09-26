@@ -7,15 +7,15 @@ import { ServerManagementTicketEntity } from '../../common/database/server-manag
 import { ServerManagementTicketsRepository } from '../../common/database/server-management-ticket/server-management-tickets.repository';
 import { KubernetesManifestTicketEntity } from '../../common/database/kubernetes-manifest-ticket/kubernetes-manifest-ticket.entity';
 import { KubernetesManifestTicketsRepository } from '../../common/database/kubernetes-manifest-ticket/kubernetes-manifest-tickets.repository';
-import { KubernetesCommandTicketEntity } from '../../common/database/kubernetes-command-ticket/kubernetes-command-ticket.entity';
-import { KubernetesCommandTicketsRepository } from '../../common/database/kubernetes-command-ticket/kubernetes-command-tickets.repository';
+import { KubectlCommandTicketEntity } from '../../common/database/kubectl-command-ticket/kubectl-command-ticket.entity';
+import { KubectlCommandTicketsRepository } from '../../common/database/kubectl-command-ticket/kubectl-command-tickets.repository';
 import { TicketStatus } from '../../common/database/ticket-status.enum';
 import { InfraHubApiService } from '../infra-hub-api/infra-hub-api.service';
 import { DatabaseManagementTicketMapper } from '../create-ticket/mapper/database-management-ticket.mapper';
 import { DatabaseProvisioningTicketMapper } from '../create-ticket/mapper/database-provisioning-ticket.mapper';
 import { ServerManagementTicketMapper } from '../create-ticket/mapper/server-management-ticket.mapper';
 import { KubernetesManifestTicketMapper } from '../create-ticket/mapper/kubernetes-manifest-ticket.mapper';
-import { KubernetesCommandTicketMapper } from '../create-ticket/mapper/kubernetes-command-ticket.mapper';
+import { KubectlCommandTicketMapper } from '../create-ticket/mapper/kubectl-command-ticket.mapper';
 
 @Injectable()
 export class UpdateTicketService {
@@ -24,7 +24,7 @@ export class UpdateTicketService {
     private readonly databaseProvisioningTicketsRepository: DatabaseProvisioningTicketsRepository,
     private readonly serverManagementTicketsRepository: ServerManagementTicketsRepository,
     private readonly kubernetesManifestTicketsRepository: KubernetesManifestTicketsRepository,
-    private readonly kubernetesCommandTicketsRepository: KubernetesCommandTicketsRepository,
+    private readonly kubectlCommandTicketsRepository: KubectlCommandTicketsRepository,
     private readonly infraHubApiService: InfraHubApiService,
   ) {}
 
@@ -116,28 +116,26 @@ export class UpdateTicketService {
     return this.kubernetesManifestTicketsRepository.create(ticket);
   }
 
-  async approveKubernetesCommandTicket(
+  async approveKubectlCommandTicket(
     number: number,
-  ): Promise<KubernetesCommandTicketEntity> {
+  ): Promise<KubectlCommandTicketEntity> {
     const ticket =
-      await this.kubernetesCommandTicketsRepository.findByNumber(number);
+      await this.kubectlCommandTicketsRepository.findByNumber(number);
     if (!ticket) {
       throw new NotFoundException(
-        `Kubernetes command ticket with number ${number} not found`,
+        `Kubectl command ticket with number ${number} not found`,
       );
     }
     this.assertOpen(ticket.status, number, 'approved');
 
     const { executionResult } =
-      await this.infraHubApiService.manageKubernetesCommand(
-        KubernetesCommandTicketMapper.toManageKubernetesCommandRequest(
-          ticket,
-        ),
+      await this.infraHubApiService.executeKubectlCommand(
+        KubectlCommandTicketMapper.toExecuteKubectlCommandRequest(ticket),
       );
 
     ticket.status = TicketStatus.APPROVED;
     ticket.response = JSON.stringify(executionResult);
-    return this.kubernetesCommandTicketsRepository.create(ticket);
+    return this.kubectlCommandTicketsRepository.create(ticket);
   }
 
   async rejectDatabaseManagementTicket(
@@ -204,20 +202,20 @@ export class UpdateTicketService {
     return this.kubernetesManifestTicketsRepository.create(ticket);
   }
 
-  async rejectKubernetesCommandTicket(
+  async rejectKubectlCommandTicket(
     number: number,
-  ): Promise<KubernetesCommandTicketEntity> {
+  ): Promise<KubectlCommandTicketEntity> {
     const ticket =
-      await this.kubernetesCommandTicketsRepository.findByNumber(number);
+      await this.kubectlCommandTicketsRepository.findByNumber(number);
     if (!ticket) {
       throw new NotFoundException(
-        `Kubernetes command ticket with number ${number} not found`,
+        `Kubectl command ticket with number ${number} not found`,
       );
     }
     this.assertOpen(ticket.status, number, 'rejected');
 
     ticket.status = TicketStatus.REJECTED;
-    return this.kubernetesCommandTicketsRepository.create(ticket);
+    return this.kubectlCommandTicketsRepository.create(ticket);
   }
 
   private assertOpen(

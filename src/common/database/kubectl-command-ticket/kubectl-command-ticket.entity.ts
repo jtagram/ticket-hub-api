@@ -8,8 +8,8 @@ import {
 } from 'typeorm';
 import { TicketStatus } from '../ticket-status.enum';
 
-@Entity('kubernetes_command_tickets')
-export class KubernetesCommandTicketEntity {
+@Entity('kubectl_command_tickets')
+export class KubectlCommandTicketEntity {
   @PrimaryGeneratedColumn()
   declare id: number;
 
@@ -35,8 +35,8 @@ export class KubernetesCommandTicketEntity {
   @Column({ length: 500 })
   declare description: string;
 
-  @Column('text', { name: 'code_yaml' })
-  declare codeYaml: string;
+  @Column('text', { name: 'kubectl_command' })
+  declare kubectlCommand: string;
 
   @Column('text')
   declare response: string;
@@ -47,13 +47,13 @@ export class KubernetesCommandTicketEntity {
   @UpdateDateColumn({ name: 'updated_at' })
   declare updatedAt: Date;
 
-  static builder(): KubernetesCommandTicketEntityBuilder {
-    return new KubernetesCommandTicketEntityBuilder();
+  static builder(): KubectlCommandTicketEntityBuilder {
+    return new KubectlCommandTicketEntityBuilder();
   }
 }
 
-export class KubernetesCommandTicketEntityBuilder {
-  private readonly entity = new KubernetesCommandTicketEntity();
+export class KubectlCommandTicketEntityBuilder {
+  private readonly entity = new KubectlCommandTicketEntity();
 
   withInformer(informer: string): this {
     this.entity.informer = informer;
@@ -85,8 +85,8 @@ export class KubernetesCommandTicketEntityBuilder {
     return this;
   }
 
-  withCodeYaml(codeYaml: string): this {
-    this.entity.codeYaml = codeYaml;
+  withKubectlCommand(kubectlCommand: string): this {
+    this.entity.kubectlCommand = kubectlCommand;
     return this;
   }
 
@@ -95,15 +95,15 @@ export class KubernetesCommandTicketEntityBuilder {
     return this;
   }
 
-  build(): KubernetesCommandTicketEntity {
-    const requiredFields: Array<keyof KubernetesCommandTicketEntity> = [
+  build(): KubectlCommandTicketEntity {
+    const requiredFields: Array<keyof KubectlCommandTicketEntity> = [
       'informer',
       'assignee',
       'department',
       'subject',
       'status',
       'description',
-      'codeYaml',
+      'kubectlCommand',
       'response',
     ];
 
@@ -112,7 +112,7 @@ export class KubernetesCommandTicketEntityBuilder {
     );
     if (missingField) {
       throw new Error(
-        `Cannot build KubernetesCommandTicketEntity: missing required field "${missingField}"`,
+        `Cannot build KubectlCommandTicketEntity: missing required field "${missingField}"`,
       );
     }
 

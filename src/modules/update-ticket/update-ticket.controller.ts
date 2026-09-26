@@ -33,11 +33,9 @@ export class UpdateTicketController {
     return this.updateTicketService.approveKubernetesManifestTicket(number);
   }
 
-  @Patch('kubernetes/command/:number/approve')
-  approveKubernetesCommandTicket(
-    @Param('number', ParseIntPipe) number: number,
-  ) {
-    return this.updateTicketService.approveKubernetesCommandTicket(number);
+  @Patch('kubernetes/kubectl/:number/approve')
+  approveKubectlCommandTicket(@Param('number', ParseIntPipe) number: number) {
+    return this.updateTicketService.approveKubectlCommandTicket(number);
   }
 
   @Patch('database/management/:number/reject')
@@ -66,10 +64,8 @@ export class UpdateTicketController {
     return this.updateTicketService.rejectKubernetesManifestTicket(number);
   }
 
-  @Patch('kubernetes/command/:number/reject')
-  rejectKubernetesCommandTicket(
-    @Param('number', ParseIntPipe) number: number,
-  ) {
-    return this.updateTicketService.rejectKubernetesCommandTicket(number);
+  @Patch('kubernetes/kubectl/:number/reject')
+  rejectKubectlCommandTicket(@Param('number', ParseIntPipe) number: number) {
+    return this.updateTicketService.rejectKubectlCommandTicket(number);
   }
 }

@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
 
-export class CreateKubernetesCommandTicketDto {
+export class CreateKubectlCommandTicketDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(50)
@@ -28,5 +28,5 @@ export class CreateKubernetesCommandTicketDto {
 
   @IsString()
   @IsNotEmpty()
-  codeYaml!: string;
+  kubectlCommand!: string;
 }

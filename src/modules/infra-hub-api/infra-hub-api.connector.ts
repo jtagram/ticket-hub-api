@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 import {
   CreateDatabaseRequest,
+  ExecuteKubectlCommandRequest,
   InfraHubApiResponse,
   ListDatabasesResponse,
   ListDeploymentsResponse,
@@ -47,12 +48,12 @@ export class InfraHubApiConnector {
     return response.data;
   }
 
-  async manageKubernetesCommand(
-    body: ManageCommandRequest,
+  async executeKubectlCommand(
+    body: ExecuteKubectlCommandRequest,
   ): Promise<InfraHubApiResponse> {
     const response = await firstValueFrom(
       this.httpService.post<InfraHubApiResponse>(
-        `${this.baseUrl}/kubernates-hub-api/manage-server`,
+        `${this.baseUrl}/kubernates-hub-api/execute-kubectl`,
         body,
       ),
     );

@@ -7,18 +7,18 @@ import { ServerManagementTicketEntity } from '../../common/database/server-manag
 import { ServerManagementTicketsRepository } from '../../common/database/server-management-ticket/server-management-tickets.repository';
 import { KubernetesManifestTicketEntity } from '../../common/database/kubernetes-manifest-ticket/kubernetes-manifest-ticket.entity';
 import { KubernetesManifestTicketsRepository } from '../../common/database/kubernetes-manifest-ticket/kubernetes-manifest-tickets.repository';
-import { KubernetesCommandTicketEntity } from '../../common/database/kubernetes-command-ticket/kubernetes-command-ticket.entity';
-import { KubernetesCommandTicketsRepository } from '../../common/database/kubernetes-command-ticket/kubernetes-command-tickets.repository';
+import { KubectlCommandTicketEntity } from '../../common/database/kubectl-command-ticket/kubectl-command-ticket.entity';
+import { KubectlCommandTicketsRepository } from '../../common/database/kubectl-command-ticket/kubectl-command-tickets.repository';
 import { CreateDatabaseManagementTicketDto } from './dto/create-database-management-ticket.dto';
 import { CreateDatabaseProvisioningTicketDto } from './dto/create-database-provisioning-ticket.dto';
 import { CreateServerManagementTicketDto } from './dto/create-server-management-ticket.dto';
 import { CreateKubernetesManifestTicketDto } from './dto/create-kubernetes-manifest-ticket.dto';
-import { CreateKubernetesCommandTicketDto } from './dto/create-kubernetes-command-ticket.dto';
+import { CreateKubectlCommandTicketDto } from './dto/create-kubectl-command-ticket.dto';
 import { DatabaseManagementTicketMapper } from './mapper/database-management-ticket.mapper';
 import { DatabaseProvisioningTicketMapper } from './mapper/database-provisioning-ticket.mapper';
 import { ServerManagementTicketMapper } from './mapper/server-management-ticket.mapper';
 import { KubernetesManifestTicketMapper } from './mapper/kubernetes-manifest-ticket.mapper';
-import { KubernetesCommandTicketMapper } from './mapper/kubernetes-command-ticket.mapper';
+import { KubectlCommandTicketMapper } from './mapper/kubectl-command-ticket.mapper';
 
 @Injectable()
 export class CreateTicketService {
@@ -27,7 +27,7 @@ export class CreateTicketService {
     private readonly databaseProvisioningTicketsRepository: DatabaseProvisioningTicketsRepository,
     private readonly serverManagementTicketsRepository: ServerManagementTicketsRepository,
     private readonly kubernetesManifestTicketsRepository: KubernetesManifestTicketsRepository,
-    private readonly kubernetesCommandTicketsRepository: KubernetesCommandTicketsRepository,
+    private readonly kubectlCommandTicketsRepository: KubectlCommandTicketsRepository,
   ) {}
 
   async createDatabaseManagementTicket(
@@ -58,10 +58,10 @@ export class CreateTicketService {
     return this.kubernetesManifestTicketsRepository.create(ticket);
   }
 
-  async createKubernetesCommandTicket(
-    dto: CreateKubernetesCommandTicketDto,
-  ): Promise<KubernetesCommandTicketEntity> {
-    const ticket = KubernetesCommandTicketMapper.toEntity(dto);
-    return this.kubernetesCommandTicketsRepository.create(ticket);
+  async createKubectlCommandTicket(
+    dto: CreateKubectlCommandTicketDto,
+  ): Promise<KubectlCommandTicketEntity> {
+    const ticket = KubectlCommandTicketMapper.toEntity(dto);
+    return this.kubectlCommandTicketsRepository.create(ticket);
   }
 }

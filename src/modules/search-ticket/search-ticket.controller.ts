@@ -25,9 +25,9 @@ export class SearchTicketController {
     return this.searchTicketService.findAllKubernetesManifestTickets();
   }
 
-  @Get('kubernetes/command')
-  findAllKubernetesCommandTickets() {
-    return this.searchTicketService.findAllKubernetesCommandTickets();
+  @Get('kubernetes/kubectl')
+  findAllKubectlCommandTickets() {
+    return this.searchTicketService.findAllKubectlCommandTickets();
   }
 
   @Get('database/management/:number')
@@ -66,12 +66,10 @@ export class SearchTicketController {
     );
   }
 
-  @Get('kubernetes/command/:number')
-  findKubernetesCommandTicketByNumber(
+  @Get('kubernetes/kubectl/:number')
+  findKubectlCommandTicketByNumber(
     @Param('number', ParseIntPipe) number: number,
   ) {
-    return this.searchTicketService.findKubernetesCommandTicketByNumber(
-      number,
-    );
+    return this.searchTicketService.findKubectlCommandTicketByNumber(number);
   }
 }

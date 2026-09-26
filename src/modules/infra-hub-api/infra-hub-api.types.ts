@@ -17,6 +17,11 @@ export interface ManageCommandRequest {
   command: string;
 }
 
+export interface ExecuteKubectlCommandRequest {
+  numberOfTickets: number;
+  kubectlCommand: string;
+}
+
 export type KubernetesManifestAction = 'apply' | 'delete' | 'create';
 
 export interface ManageKubernetesManifestRequest {
