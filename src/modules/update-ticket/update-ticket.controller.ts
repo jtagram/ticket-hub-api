@@ -22,9 +22,18 @@ export class UpdateTicketController {
     return this.updateTicketService.approveDatacenterTicket(number);
   }
 
-  @Patch('kubernetes/:number/approve')
-  approveKubernetesTicket(@Param('number', ParseIntPipe) number: number) {
-    return this.updateTicketService.approveKubernetesTicket(number);
+  @Patch('kubernetes/manifest/:number/approve')
+  approveKubernetesManifestTicket(
+    @Param('number', ParseIntPipe) number: number,
+  ) {
+    return this.updateTicketService.approveKubernetesManifestTicket(number);
+  }
+
+  @Patch('kubernetes/command/:number/approve')
+  approveKubernetesCommandTicket(
+    @Param('number', ParseIntPipe) number: number,
+  ) {
+    return this.updateTicketService.approveKubernetesCommandTicket(number);
   }
 
   @Patch('database/:number/reject')
@@ -44,8 +53,17 @@ export class UpdateTicketController {
     return this.updateTicketService.rejectDatacenterTicket(number);
   }
 
-  @Patch('kubernetes/:number/reject')
-  rejectKubernetesTicket(@Param('number', ParseIntPipe) number: number) {
-    return this.updateTicketService.rejectKubernetesTicket(number);
+  @Patch('kubernetes/manifest/:number/reject')
+  rejectKubernetesManifestTicket(
+    @Param('number', ParseIntPipe) number: number,
+  ) {
+    return this.updateTicketService.rejectKubernetesManifestTicket(number);
+  }
+
+  @Patch('kubernetes/command/:number/reject')
+  rejectKubernetesCommandTicket(
+    @Param('number', ParseIntPipe) number: number,
+  ) {
+    return this.updateTicketService.rejectKubernetesCommandTicket(number);
   }
 }

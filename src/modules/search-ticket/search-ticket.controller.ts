@@ -15,9 +15,14 @@ export class SearchTicketController {
     return this.searchTicketService.findAllDatacenterTickets();
   }
 
-  @Get('kubernetes')
-  findAllKubernetesTickets() {
-    return this.searchTicketService.findAllKubernetesTickets();
+  @Get('kubernetes/manifest')
+  findAllKubernetesManifestTickets() {
+    return this.searchTicketService.findAllKubernetesManifestTickets();
+  }
+
+  @Get('kubernetes/command')
+  findAllKubernetesCommandTickets() {
+    return this.searchTicketService.findAllKubernetesCommandTickets();
   }
 
   @Get('database/:number')
@@ -34,10 +39,21 @@ export class SearchTicketController {
     return this.searchTicketService.findDatacenterTicketByNumber(number);
   }
 
-  @Get('kubernetes/:number')
-  findKubernetesTicketByNumber(
+  @Get('kubernetes/manifest/:number')
+  findKubernetesManifestTicketByNumber(
     @Param('number', ParseIntPipe) number: number,
   ) {
-    return this.searchTicketService.findKubernetesTicketByNumber(number);
+    return this.searchTicketService.findKubernetesManifestTicketByNumber(
+      number,
+    );
+  }
+
+  @Get('kubernetes/command/:number')
+  findKubernetesCommandTicketByNumber(
+    @Param('number', ParseIntPipe) number: number,
+  ) {
+    return this.searchTicketService.findKubernetesCommandTicketByNumber(
+      number,
+    );
   }
 }

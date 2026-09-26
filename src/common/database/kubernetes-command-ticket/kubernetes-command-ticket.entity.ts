@@ -7,11 +7,9 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { TicketStatus } from '../ticket-status.enum';
-import { KubernetesExecutionType } from './kubernetes-execution-type.enum';
-import { KubernetesTicketAction } from './kubernetes-ticket-action.enum';
 
-@Entity('kubernetes_tickets')
-export class KubernetesTicketEntity {
+@Entity('kubernetes_command_tickets')
+export class KubernetesCommandTicketEntity {
   @PrimaryGeneratedColumn()
   declare id: number;
 
@@ -37,25 +35,11 @@ export class KubernetesTicketEntity {
   @Column({ length: 500 })
   declare description: string;
 
-
   @Column('text', { name: 'code_yaml' })
   declare codeYaml: string;
 
   @Column('text')
   declare response: string;
-
-  @Column({
-    type: 'enum',
-    enum: KubernetesExecutionType,
-    name: 'execution_type',
-  })
-  declare executionType: KubernetesExecutionType;
-
-  @Column({ length: 50, nullable: true })
-  declare namespace?: string;
-
-  @Column({ type: 'enum', enum: KubernetesTicketAction, nullable: true })
-  declare action?: KubernetesTicketAction;
 
   @CreateDateColumn({ name: 'created_at' })
   declare createdAt: Date;
@@ -63,13 +47,13 @@ export class KubernetesTicketEntity {
   @UpdateDateColumn({ name: 'updated_at' })
   declare updatedAt: Date;
 
-  static builder(): KubernetesTicketEntityBuilder {
-    return new KubernetesTicketEntityBuilder();
+  static builder(): KubernetesCommandTicketEntityBuilder {
+    return new KubernetesCommandTicketEntityBuilder();
   }
 }
 
-export class KubernetesTicketEntityBuilder {
-  private readonly entity = new KubernetesTicketEntity();
+export class KubernetesCommandTicketEntityBuilder {
+  private readonly entity = new KubernetesCommandTicketEntity();
 
   withInformer(informer: string): this {
     this.entity.informer = informer;
@@ -111,23 +95,8 @@ export class KubernetesTicketEntityBuilder {
     return this;
   }
 
-  withExecutionType(executionType: KubernetesExecutionType): this {
-    this.entity.executionType = executionType;
-    return this;
-  }
-
-  withNamespace(namespace: string): this {
-    this.entity.namespace = namespace;
-    return this;
-  }
-
-  withAction(action: KubernetesTicketAction): this {
-    this.entity.action = action;
-    return this;
-  }
-
-  build(): KubernetesTicketEntity {
-    const requiredFields: Array<keyof KubernetesTicketEntity> = [
+  build(): KubernetesCommandTicketEntity {
+    const requiredFields: Array<keyof KubernetesCommandTicketEntity> = [
       'informer',
       'assignee',
       'department',
@@ -136,7 +105,6 @@ export class KubernetesTicketEntityBuilder {
       'description',
       'codeYaml',
       'response',
-      'executionType',
     ];
 
     const missingField = requiredFields.find(
@@ -144,17 +112,7 @@ export class KubernetesTicketEntityBuilder {
     );
     if (missingField) {
       throw new Error(
-        `Cannot build KubernetesTicketEntity: missing required field "${missingField}"`,
-      );
-    }
-
-    if (
-      this.entity.executionType === KubernetesExecutionType.MANIFEST &&
-      (this.entity.namespace === undefined ||
-        this.entity.action === undefined)
-    ) {
-      throw new Error(
-        'Cannot build KubernetesTicketEntity: "namespace" and "action" are required when executionType is MANIFEST',
+        `Cannot build KubernetesCommandTicketEntity: missing required field "${missingField}"`,
       );
     }
 

@@ -3,15 +3,18 @@ import { DatabaseTicketEntity } from '../../common/database/database-ticket/data
 import { DatabaseTicketsRepository } from '../../common/database/database-ticket/database-tickets.repository';
 import { DatacenterTicketEntity } from '../../common/database/datacenter-ticket/datacenter-ticket.entity';
 import { DatacenterTicketsRepository } from '../../common/database/datacenter-ticket/datacenter-tickets.repository';
-import { KubernetesTicketEntity } from '../../common/database/kubernetes-ticket/kubernetes-ticket.entity';
-import { KubernetesTicketsRepository } from '../../common/database/kubernetes-ticket/kubernetes-tickets.repository';
+import { KubernetesManifestTicketEntity } from '../../common/database/kubernetes-manifest-ticket/kubernetes-manifest-ticket.entity';
+import { KubernetesManifestTicketsRepository } from '../../common/database/kubernetes-manifest-ticket/kubernetes-manifest-tickets.repository';
+import { KubernetesCommandTicketEntity } from '../../common/database/kubernetes-command-ticket/kubernetes-command-ticket.entity';
+import { KubernetesCommandTicketsRepository } from '../../common/database/kubernetes-command-ticket/kubernetes-command-tickets.repository';
 
 @Injectable()
 export class SearchTicketService {
   constructor(
     private readonly databaseTicketsRepository: DatabaseTicketsRepository,
     private readonly datacenterTicketsRepository: DatacenterTicketsRepository,
-    private readonly kubernetesTicketsRepository: KubernetesTicketsRepository,
+    private readonly kubernetesManifestTicketsRepository: KubernetesManifestTicketsRepository,
+    private readonly kubernetesCommandTicketsRepository: KubernetesCommandTicketsRepository,
   ) {}
 
   async findAllDatabaseTickets(): Promise<DatabaseTicketEntity[]> {
@@ -22,8 +25,16 @@ export class SearchTicketService {
     return this.datacenterTicketsRepository.findAll();
   }
 
-  async findAllKubernetesTickets(): Promise<KubernetesTicketEntity[]> {
-    return this.kubernetesTicketsRepository.findAll();
+  async findAllKubernetesManifestTickets(): Promise<
+    KubernetesManifestTicketEntity[]
+  > {
+    return this.kubernetesManifestTicketsRepository.findAll();
+  }
+
+  async findAllKubernetesCommandTickets(): Promise<
+    KubernetesCommandTicketEntity[]
+  > {
+    return this.kubernetesCommandTicketsRepository.findAll();
   }
 
   async findDatabaseTicketByNumber(
@@ -51,14 +62,27 @@ export class SearchTicketService {
     return ticket;
   }
 
-  async findKubernetesTicketByNumber(
+  async findKubernetesManifestTicketByNumber(
     number: number,
-  ): Promise<KubernetesTicketEntity> {
+  ): Promise<KubernetesManifestTicketEntity> {
     const ticket =
-      await this.kubernetesTicketsRepository.findByNumber(number);
+      await this.kubernetesManifestTicketsRepository.findByNumber(number);
     if (!ticket) {
       throw new NotFoundException(
-        `Kubernetes ticket with number ${number} not found`,
+        `Kubernetes manifest ticket with number ${number} not found`,
+      );
+    }
+    return ticket;
+  }
+
+  async findKubernetesCommandTicketByNumber(
+    number: number,
+  ): Promise<KubernetesCommandTicketEntity> {
+    const ticket =
+      await this.kubernetesCommandTicketsRepository.findByNumber(number);
+    if (!ticket) {
+      throw new NotFoundException(
+        `Kubernetes command ticket with number ${number} not found`,
       );
     }
     return ticket;

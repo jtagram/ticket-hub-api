@@ -7,21 +7,25 @@ import { DatabaseTicketEntity } from './database-ticket/database-ticket.entity';
 import { DatabaseTicketsRepository } from './database-ticket/database-tickets.repository';
 import { DatabaseProvisioningTicketEntity } from './database-provisioning-ticket/database-provisioning-ticket.entity';
 import { DatabaseProvisioningTicketsRepository } from './database-provisioning-ticket/database-provisioning-tickets.repository';
-import { KubernetesTicketEntity } from './kubernetes-ticket/kubernetes-ticket.entity';
-import { KubernetesTicketsRepository } from './kubernetes-ticket/kubernetes-tickets.repository';
+import { KubernetesManifestTicketEntity } from './kubernetes-manifest-ticket/kubernetes-manifest-ticket.entity';
+import { KubernetesManifestTicketsRepository } from './kubernetes-manifest-ticket/kubernetes-manifest-tickets.repository';
+import { KubernetesCommandTicketEntity } from './kubernetes-command-ticket/kubernetes-command-ticket.entity';
+import { KubernetesCommandTicketsRepository } from './kubernetes-command-ticket/kubernetes-command-tickets.repository';
 
 const entities = [
   DatacenterTicketEntity,
   DatabaseTicketEntity,
   DatabaseProvisioningTicketEntity,
-  KubernetesTicketEntity,
+  KubernetesManifestTicketEntity,
+  KubernetesCommandTicketEntity,
 ];
 
 const repositories = [
   DatacenterTicketsRepository,
   DatabaseTicketsRepository,
   DatabaseProvisioningTicketsRepository,
-  KubernetesTicketsRepository,
+  KubernetesManifestTicketsRepository,
+  KubernetesCommandTicketsRepository,
 ];
 
 @Global()
