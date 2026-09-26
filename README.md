@@ -15,7 +15,6 @@ proceso no arranca):
 - `DATABASE_NAME`
 - `INFRA_HUB_API_URL`
 - `IAM_API_URL`
-- `JWT_PUBLIC_KEY`
 - `TICKET_HUB_APPLICATION_NAME`
 
 ## Cómo obtener cada una
@@ -47,13 +46,9 @@ pública si corre fuera).
 
 ### `IAM_API_URL`
 
-URL de `iam-api`, usada para resolver datos de usuarios/roles.
-
-### `JWT_PUBLIC_KEY`
-
-Debe ser exactamente la misma clave pública RSA configurada como
-`JWT_PUBLIC_KEY` en `iam-api` — se copia de ahí, nunca se genera una nueva.
-Es la que permite validar los tokens que emite `iam-api`.
+URL de `iam-api`, usada para resolver datos de usuarios/roles y para pedirle
+por HTTP (`GET /auth/public-key`) la clave pública RSA con la que se validan
+los tokens que emite `iam-api`.
 
 ### `TICKET_HUB_APPLICATION_NAME`
 

@@ -8,6 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
 import { AuthenticatedUser } from '../jwt/authenticated-user';
+import { JwtPublicKeyService } from '../jwt/jwt-public-key.service';
 import { IS_PUBLIC_KEY } from './public.decorator';
 
 const MISSING_TOKEN_MESSAGE = 'Missing or malformed bearer token';
@@ -18,6 +19,7 @@ export class JwtAuthGuard implements CanActivate {
   constructor(
     private readonly jwtService: JwtService,
     private readonly reflector: Reflector,
+    private readonly jwtPublicKeyService: JwtPublicKeyService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -35,7 +37,8 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException(MISSING_TOKEN_MESSAGE);
     }
 
-    const payload = await verifyToken(this.jwtService, token);
+    const publicKey = this.jwtPublicKeyService.getCurrentPublicKey();
+    const payload = await verifyToken(this.jwtService, token, publicKey);
     if (!payload) {
       throw new UnauthorizedException(INVALID_TOKEN_MESSAGE);
     }
@@ -58,9 +61,13 @@ function extractBearerToken(request: Request): string | undefined {
 async function verifyToken(
   jwtService: JwtService,
   token: string,
+  publicKey: string,
 ): Promise<AuthenticatedUser | null> {
   try {
-    return await jwtService.verifyAsync<AuthenticatedUser>(token);
+    return await jwtService.verifyAsync<AuthenticatedUser>(token, {
+      publicKey,
+      algorithms: ['RS256'],
+    });
   } catch (error) {
     console.error('Failed to verify JWT', error);
     return null;

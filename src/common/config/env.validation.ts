@@ -52,10 +52,6 @@ export class EnvironmentVariables {
 
   @IsString()
   @IsNotEmpty()
-  JWT_PUBLIC_KEY!: string;
-
-  @IsString()
-  @IsNotEmpty()
   TICKET_HUB_APPLICATION_NAME!: string;
 }
 
