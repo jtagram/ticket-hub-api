@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
-import { InfraHubApiAuthService } from './infra-hub-api-auth.service';
+import { AppUserAuthService } from '../../common/iam-api-auth/app-user-auth.service';
 import {
   CreateDatabaseRequest,
   ExecuteKubectlCommandRequest,
@@ -19,7 +19,7 @@ export class InfraHubApiConnector {
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
-    private readonly infraHubApiAuthService: InfraHubApiAuthService,
+    private readonly appUserAuthService: AppUserAuthService,
   ) {}
 
   private get baseUrl(): string {
@@ -29,7 +29,9 @@ export class InfraHubApiConnector {
   async manageServerCommand(
     body: ManageCommandRequest,
   ): Promise<InfraHubApiResponse> {
-    const accessToken = await this.infraHubApiAuthService.getAccessToken();
+    const accessToken = await this.appUserAuthService.getAccessToken(
+      this.configService.get<string>('INFRA_HUB_API_APPLICATION_NAME')!,
+    );
     const response = await firstValueFrom(
       this.httpService.post<InfraHubApiResponse>(
         `${this.baseUrl}/server-hub-api/manage-server`,
@@ -43,7 +45,9 @@ export class InfraHubApiConnector {
   async manageKubernetesManifest(
     body: ManageKubernetesManifestRequest,
   ): Promise<InfraHubApiResponse> {
-    const accessToken = await this.infraHubApiAuthService.getAccessToken();
+    const accessToken = await this.appUserAuthService.getAccessToken(
+      this.configService.get<string>('INFRA_HUB_API_APPLICATION_NAME')!,
+    );
     const response = await firstValueFrom(
       this.httpService.post<InfraHubApiResponse>(
         `${this.baseUrl}/kubernates-hub-api/manage-manifest`,
@@ -57,7 +61,9 @@ export class InfraHubApiConnector {
   async executeKubectlCommand(
     body: ExecuteKubectlCommandRequest,
   ): Promise<InfraHubApiResponse> {
-    const accessToken = await this.infraHubApiAuthService.getAccessToken();
+    const accessToken = await this.appUserAuthService.getAccessToken(
+      this.configService.get<string>('INFRA_HUB_API_APPLICATION_NAME')!,
+    );
     const response = await firstValueFrom(
       this.httpService.post<InfraHubApiResponse>(
         `${this.baseUrl}/kubernates-hub-api/execute-kubectl`,
@@ -71,7 +77,9 @@ export class InfraHubApiConnector {
   async manageDatabase(
     body: ManageDatabaseRequest,
   ): Promise<InfraHubApiResponse> {
-    const accessToken = await this.infraHubApiAuthService.getAccessToken();
+    const accessToken = await this.appUserAuthService.getAccessToken(
+      this.configService.get<string>('INFRA_HUB_API_APPLICATION_NAME')!,
+    );
     const response = await firstValueFrom(
       this.httpService.post<InfraHubApiResponse>(
         `${this.baseUrl}/database-hub-api/manage-database`,
@@ -85,7 +93,9 @@ export class InfraHubApiConnector {
   async createDatabase(
     body: CreateDatabaseRequest,
   ): Promise<InfraHubApiResponse> {
-    const accessToken = await this.infraHubApiAuthService.getAccessToken();
+    const accessToken = await this.appUserAuthService.getAccessToken(
+      this.configService.get<string>('INFRA_HUB_API_APPLICATION_NAME')!,
+    );
     const response = await firstValueFrom(
       this.httpService.post<InfraHubApiResponse>(
         `${this.baseUrl}/database-hub-api/create-database`,
@@ -97,7 +107,9 @@ export class InfraHubApiConnector {
   }
 
   async listDeployments(namespace: string): Promise<ListDeploymentsResponse> {
-    const accessToken = await this.infraHubApiAuthService.getAccessToken();
+    const accessToken = await this.appUserAuthService.getAccessToken(
+      this.configService.get<string>('INFRA_HUB_API_APPLICATION_NAME')!,
+    );
     const response = await firstValueFrom(
       this.httpService.get<ListDeploymentsResponse>(
         `${this.baseUrl}/kubernates-hub-api/list-deployments`,
@@ -114,7 +126,9 @@ export class InfraHubApiConnector {
     namespace: string,
     deployment: string,
   ): Promise<ListDatabasesResponse> {
-    const accessToken = await this.infraHubApiAuthService.getAccessToken();
+    const accessToken = await this.appUserAuthService.getAccessToken(
+      this.configService.get<string>('INFRA_HUB_API_APPLICATION_NAME')!,
+    );
     const response = await firstValueFrom(
       this.httpService.get<ListDatabasesResponse>(
         `${this.baseUrl}/database-hub-api/list-databases`,

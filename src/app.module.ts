@@ -10,6 +10,7 @@ import { FilterModule } from './common/filter/filter.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { RolesGuard } from './common/guards/roles.guard';
 import { JwtPublicKeyModule } from './common/jwt/jwt-public-key.module';
+import { AppUserAuthModule } from './common/iam-api-auth/app-user-auth.module';
 import { LoggerModule } from './instrument/logger/logger.module';
 import { InfraHubApiModule } from './modules/infra-hub-api/infra-hub-api.module';
 import { IamApiModule } from './modules/iam-api/iam-api.module';
@@ -29,6 +30,7 @@ const jwtModule = JwtModule.register({});
     FilterModule,
     jwtModule,
     JwtPublicKeyModule,
+    AppUserAuthModule,
     InfraHubApiModule,
     IamApiModule,
     SearchForValueListsModule,

@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
+import { AppUserAuthService } from '../../common/iam-api-auth/app-user-auth.service';
 import { InternalUserResponse } from './iam-api.types';
 
 @Injectable()
@@ -9,6 +10,7 @@ export class IamApiConnector {
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
+    private readonly appUserAuthService: AppUserAuthService,
   ) {}
 
   private get baseUrl(): string {
@@ -18,8 +20,10 @@ export class IamApiConnector {
   async findInternalUsersByRole(
     applicationName: string,
     roles: string[],
-    token: string,
   ): Promise<InternalUserResponse[]> {
+    const token = await this.appUserAuthService.getAccessToken(
+      applicationName,
+    );
     const response = await firstValueFrom(
       this.httpService.get<InternalUserResponse[]>(
         `${this.baseUrl}/internal-users/by-role`,

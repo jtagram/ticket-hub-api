@@ -1,5 +1,4 @@
-import { Controller, Get, Query, Req } from '@nestjs/common';
-import type { Request } from 'express';
+import { Controller, Get, Query } from '@nestjs/common';
 import { SearchForValueListsService } from './search-for-value-lists.service';
 import { FindDatabaseDeploymentsDto } from './dto/find-database-deployments.dto';
 import { FindDatabaseNamesDto } from './dto/find-database-names.dto';
@@ -12,9 +11,8 @@ export class SearchForValueListsController {
   ) {}
 
   @Get('assignees')
-  findAssignees(@Req() request: Request): Promise<ValueListItemResponse[]> {
-    const token = extractBearerToken(request);
-    return this.searchForValueListsService.findAssignees(token);
+  findAssignees(): Promise<ValueListItemResponse[]> {
+    return this.searchForValueListsService.findAssignees();
   }
 
   @Get('database-deployments')
@@ -30,15 +28,4 @@ export class SearchForValueListsController {
   ): Promise<ValueListItemResponse[]> {
     return this.searchForValueListsService.findDatabaseNames(dto);
   }
-}
-
-/**
- * Same extraction criteria as `extractBearerToken` in jwt-auth.guard.ts.
- * The global `JwtAuthGuard` already validated this header before this
- * handler runs, so a well-formed bearer token is guaranteed to be present.
- */
-function extractBearerToken(request: Request): string {
-  const header = request.headers.authorization;
-  const [type, token] = (header ?? '').split(' ');
-  return type === 'Bearer' ? token : '';
 }

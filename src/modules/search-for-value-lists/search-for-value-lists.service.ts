@@ -25,14 +25,10 @@ export class SearchForValueListsService {
     private readonly configService: ConfigService,
   ) {}
 
-  async findAssignees(token: string): Promise<ValueListItemResponse[]> {
-    const ticketHubApplicationName = this.configService.get<string>(
-      'TICKET_HUB_APPLICATION_NAME',
-    )!;
+  async findAssignees(): Promise<ValueListItemResponse[]> {
     const internalUsers = await this.iamApiService.findInternalUsersByRole(
-      ticketHubApplicationName,
+      this.configService.get<string>('TICKET_HUB_APPLICATION_NAME')!,
       ASSIGNEE_ROLES,
-      token,
     );
 
     return internalUsers.map((internalUser) => ({

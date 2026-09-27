@@ -60,11 +60,11 @@ export class EnvironmentVariables {
 
   @IsString()
   @IsNotEmpty()
-  INFRA_HUB_API_SERVICE_CLIENT_ID!: string;
+  TICKET_HUB_API_SERVICE_CLIENT_ID!: string;
 
   @IsString()
   @IsNotEmpty()
-  INFRA_HUB_API_SERVICE_CLIENT_SECRET!: string;
+  TICKET_HUB_API_SERVICE_CLIENT_SECRET!: string;
 }
 
 export function validate(
