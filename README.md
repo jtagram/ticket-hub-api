@@ -16,6 +16,9 @@ proceso no arranca):
 - `INFRA_HUB_API_URL`
 - `IAM_API_URL`
 - `TICKET_HUB_APPLICATION_NAME`
+- `INFRA_HUB_API_APPLICATION_NAME`
+- `INFRA_HUB_API_SERVICE_CLIENT_ID`
+- `INFRA_HUB_API_SERVICE_CLIENT_SECRET`
 
 ## Cómo obtener cada una
 
@@ -56,3 +59,20 @@ Nombre exacto (columna `name`) de la aplicación "ticket-hub" tal como está
 registrada en la base de datos de `iam-api` (tabla `apps_applications`).
 Lo usa `RolesGuard` para verificar que el token recibido fue emitido para
 esta aplicación.
+
+### `INFRA_HUB_API_APPLICATION_NAME`
+
+Nombre exacto de la aplicación "infra-hub-api" en `iam-api`; tiene que
+coincidir con el mismo valor configurado como `INFRA_HUB_API_APPLICATION_NAME`
+en `infra-hub-api`. `ticket-hub-api` lo manda como header `x-application-name`
+al loguearse contra `iam-api` (`POST /apps-users/login`).
+
+### `INFRA_HUB_API_SERVICE_CLIENT_ID` / `INFRA_HUB_API_SERVICE_CLIENT_SECRET`
+
+Credenciales de un "apps-user" creado en `iam-api` (`POST /apps-users`,
+admin-only) con rol ADMIN sobre la aplicación "infra-hub-api" — es el
+mecanismo real de `iam-api` para credenciales de servicio (machine-to-machine),
+no un internal user humano. El `clienteSecret` solo se muestra una vez, en el
+momento de crear el apps-user; guardalo ahí. `ticket-hub-api` se loguea con
+estas credenciales para obtener el JWT propio que usa en cada llamada a
+`infra-hub-api`.

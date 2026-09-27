@@ -53,6 +53,18 @@ export class EnvironmentVariables {
   @IsString()
   @IsNotEmpty()
   TICKET_HUB_APPLICATION_NAME!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  INFRA_HUB_API_APPLICATION_NAME!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  INFRA_HUB_API_SERVICE_CLIENT_ID!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  INFRA_HUB_API_SERVICE_CLIENT_SECRET!: string;
 }
 
 export function validate(
