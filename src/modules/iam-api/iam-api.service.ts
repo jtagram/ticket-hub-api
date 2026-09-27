@@ -9,10 +9,12 @@ export class IamApiService {
   async findInternalUsersByRole(
     applicationName: string,
     roles: string[],
+    token: string,
   ): Promise<InternalUserResponse[]> {
     return this.iamApiConnector.findInternalUsersByRole(
       applicationName,
       roles,
+      token,
     );
   }
 }

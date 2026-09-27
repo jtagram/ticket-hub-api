@@ -1,4 +1,5 @@
 import {
+  IsEmail,
   IsNotEmpty,
   IsString,
   Matches,
@@ -11,6 +12,7 @@ const POSTGRES_IDENTIFIER_MESSAGE =
 
 export class CreateDatabaseProvisioningTicketDto {
   @IsString()
+  @IsEmail()
   @IsNotEmpty()
   @MaxLength(50)
   informer!: string;

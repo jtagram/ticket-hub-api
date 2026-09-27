@@ -1,8 +1,15 @@
-import { IsEnum, IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import {
+  IsEmail,
+  IsEnum,
+  IsNotEmpty,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 import { KubernetesTicketAction } from '../../../common/database/kubernetes-ticket/kubernetes-ticket-action.enum';
 
 export class CreateKubernetesManifestTicketDto {
   @IsString()
+  @IsEmail()
   @IsNotEmpty()
   @MaxLength(50)
   informer!: string;

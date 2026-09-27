@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Role } from '../../common/roles/role.enum';
 import { IamApiService } from '../iam-api/iam-api.service';
 import { InfraHubApiService } from '../infra-hub-api/infra-hub-api.service';
@@ -9,7 +10,6 @@ import { ValueListItemResponse } from './value-list-item.response';
 /** Anyone who can approve at least one ticket domain is a valid assignee --
  * there's no single cross-domain APPROVER role anymore, so this lists every
  * domain's approver role instead. */
-const TICKET_HUB_APPLICATION_NAME = 'ticket-hub';
 const ASSIGNEE_ROLES: Role[] = [
   Role.ADMIN,
   Role.DATABASE_APPROVER,
@@ -22,12 +22,17 @@ export class SearchForValueListsService {
   constructor(
     private readonly iamApiService: IamApiService,
     private readonly infraHubApiService: InfraHubApiService,
+    private readonly configService: ConfigService,
   ) {}
 
-  async findAssignees(): Promise<ValueListItemResponse[]> {
+  async findAssignees(token: string): Promise<ValueListItemResponse[]> {
+    const ticketHubApplicationName = this.configService.get<string>(
+      'TICKET_HUB_APPLICATION_NAME',
+    )!;
     const internalUsers = await this.iamApiService.findInternalUsersByRole(
-      TICKET_HUB_APPLICATION_NAME,
+      ticketHubApplicationName,
       ASSIGNEE_ROLES,
+      token,
     );
 
     return internalUsers.map((internalUser) => ({

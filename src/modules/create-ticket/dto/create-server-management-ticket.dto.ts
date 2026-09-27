@@ -1,7 +1,8 @@
-import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, MaxLength } from 'class-validator';
 
 export class CreateServerManagementTicketDto {
   @IsString()
+  @IsEmail()
   @IsNotEmpty()
   @MaxLength(50)
   informer!: string;

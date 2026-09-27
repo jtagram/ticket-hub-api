@@ -18,11 +18,15 @@ export class IamApiConnector {
   async findInternalUsersByRole(
     applicationName: string,
     roles: string[],
+    token: string,
   ): Promise<InternalUserResponse[]> {
     const response = await firstValueFrom(
       this.httpService.get<InternalUserResponse[]>(
         `${this.baseUrl}/internal-users/by-role`,
-        { params: { applicationName, roles: roles.join(',') } },
+        {
+          params: { applicationName, roles: roles.join(',') },
+          headers: { Authorization: `Bearer ${token}` },
+        },
       ),
     );
     return response.data;
