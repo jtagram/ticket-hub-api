@@ -14,7 +14,7 @@ export interface InfraHubApiResponse {
 
 export interface ManageCommandRequest {
   numberOfTickets: number;
-  command: string;
+  playbook: string;
 }
 
 export interface ExecuteKubectlCommandRequest {

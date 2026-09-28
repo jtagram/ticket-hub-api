@@ -24,7 +24,7 @@ export class ServerManagementTicketMapper {
   ): ManageCommandRequest {
     return {
       numberOfTickets: ticket.number,
-      command: ticket.codeAnsible,
+      playbook: ticket.codeAnsible,
     };
   }
 }
