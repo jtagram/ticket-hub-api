@@ -51,8 +51,9 @@ pública si corre fuera).
 ### `IAM_API_URL`
 
 URL de `iam-api`, usada para resolver datos de usuarios/roles y para pedirle
-por HTTP (`GET /auth/public-key`) la clave pública RSA con la que se validan
-los tokens que emite `iam-api`.
+por HTTP (`GET /.well-known/jwks.json`, formato JWKS) las claves públicas RSA
+con las que se validan los tokens que emite `iam-api`, elegidas por el `kid`
+de cada token.
 
 ### `TICKET_HUB_API_APPLICATION_NAME`
 
