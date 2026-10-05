@@ -14,13 +14,13 @@ import { ROLES_KEY } from './roles.decorator';
 const MISSING_USER_MESSAGE =
   'RolesGuard ran without an authenticated user - JwtAuthGuard must run first';
 const WRONG_APPLICATION_MESSAGE =
-  'This token was not issued for the ticket-hub application';
+  'This token was not issued for the ticket-hub-api application';
 const INSUFFICIENT_ROLE_MESSAGE = 'You do not have the required role';
 
 /**
- * A token is only valid proof of a ticket-hub role when it was issued for
- * this exact application (`TICKET_HUB_APPLICATION_NAME`, matching what the
- * `ticket-hub` frontend sends as `x-application-name` when logging in);
+ * A token is only valid proof of a ticket-hub-api role when it was issued for
+ * this exact application (`TICKET_HUB_API_APPLICATION_NAME`, matching what the
+ * `ticket-hub` frontend sends as `x-target-application` when logging in);
  * otherwise an ADMIN of some unrelated app (e.g. "iam") would satisfy
  * `@Roles(Role.ADMIN)` here too, since role names collide across
  * applications by design.
@@ -50,10 +50,10 @@ export class RolesGuard implements CanActivate {
       throw new ForbiddenException(MISSING_USER_MESSAGE);
     }
 
-    const ticketHubApplicationName = this.configService.get<string>(
-      'TICKET_HUB_APPLICATION_NAME',
+    const ticketHubApiApplicationName = this.configService.get<string>(
+      'TICKET_HUB_API_APPLICATION_NAME',
     );
-    if (request.user.apps.application.name !== ticketHubApplicationName) {
+    if (request.user.apps.application.name !== ticketHubApiApplicationName) {
       throw new ForbiddenException(WRONG_APPLICATION_MESSAGE);
     }
 

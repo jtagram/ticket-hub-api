@@ -15,7 +15,8 @@ proceso no arranca):
 - `DATABASE_NAME`
 - `INFRA_HUB_API_URL`
 - `IAM_API_URL`
-- `TICKET_HUB_APPLICATION_NAME`
+- `TICKET_HUB_API_APPLICATION_NAME`
+- `IAM_API_APPLICATION_NAME`
 - `INFRA_HUB_API_APPLICATION_NAME`
 - `TICKET_HUB_API_SERVICE_CLIENT_ID`
 - `TICKET_HUB_API_SERVICE_CLIENT_SECRET`
@@ -53,12 +54,19 @@ URL de `iam-api`, usada para resolver datos de usuarios/roles y para pedirle
 por HTTP (`GET /auth/public-key`) la clave pública RSA con la que se validan
 los tokens que emite `iam-api`.
 
-### `TICKET_HUB_APPLICATION_NAME`
+### `TICKET_HUB_API_APPLICATION_NAME`
 
-Nombre exacto (columna `name`) de la aplicación "ticket-hub" tal como está
+Nombre exacto (columna `name`) de la aplicación "ticket-hub-api" tal como está
 registrada en la base de datos de `iam-api` (tabla `apps_applications`).
 Lo usa `RolesGuard` para verificar que el token recibido fue emitido para
-esta aplicación.
+esta aplicación, y se envía como `x-application-name` (origen) cuando este
+servicio hace login contra `iam-api`.
+
+### `IAM_API_APPLICATION_NAME`
+
+Nombre exacto de la aplicación "iam-api" en `iam-api`. Es el destino
+(`x-target-application`) del token que pide este servicio para llamar a
+`GET /internal-users/by-role`.
 
 ### `INFRA_HUB_API_APPLICATION_NAME`
 

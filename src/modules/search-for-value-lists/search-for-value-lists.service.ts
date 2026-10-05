@@ -27,7 +27,7 @@ export class SearchForValueListsService {
 
   async findAssignees(): Promise<ValueListItemResponse[]> {
     const internalUsers = await this.iamApiService.findInternalUsersByRole(
-      this.configService.get<string>('TICKET_HUB_APPLICATION_NAME')!,
+      this.configService.get<string>('TICKET_HUB_API_APPLICATION_NAME')!,
       ASSIGNEE_ROLES,
     );
 

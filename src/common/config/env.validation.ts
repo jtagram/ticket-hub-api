@@ -52,7 +52,11 @@ export class EnvironmentVariables {
 
   @IsString()
   @IsNotEmpty()
-  TICKET_HUB_APPLICATION_NAME!: string;
+  TICKET_HUB_API_APPLICATION_NAME!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  IAM_API_APPLICATION_NAME!: string;
 
   @IsString()
   @IsNotEmpty()

@@ -23,8 +23,11 @@ interface CachedToken {
 /**
  * Logs in against iam-api's apps-users (machine-to-machine) login as the
  * ticket-hub-api service app-user, and caches the resulting JWT per
- * application name so callers can attach it as a bearer token on every call
- * to that application (e.g. infra-hub-api, ticket-hub). This token is never
+ * destination application name so callers can attach it as a bearer token on
+ * every call to that application (e.g. infra-hub-api, iam-api). The login
+ * declares ticket-hub-api as the origin application and the destination as
+ * the target, and iam-api only issues the token when that connection exists
+ * for the service app-user. This token is never
  * the end user's token that originated a request -- it identifies
  * ticket-hub-api itself to whichever application it is acting against.
  *
@@ -45,14 +48,16 @@ export class AppUserAuthService {
     private readonly configService: ConfigService,
   ) {}
 
-  async getAccessToken(applicationName: string): Promise<string> {
-    const cached = this.cachedTokensByApplicationName.get(applicationName);
+  async getAccessToken(targetApplicationName: string): Promise<string> {
+    const cached = this.cachedTokensByApplicationName.get(
+      targetApplicationName,
+    );
     if (cached && this.isStillValid(cached)) {
       return cached.accessToken;
     }
 
-    const accessToken = await this.login(applicationName);
-    this.cachedTokensByApplicationName.set(applicationName, {
+    const accessToken = await this.login(targetApplicationName);
+    this.cachedTokensByApplicationName.set(targetApplicationName, {
       accessToken,
       expiresAtMs: decodeJwtExpirationMs(accessToken),
     });
@@ -67,10 +72,12 @@ export class AppUserAuthService {
     return this.configService.get<string>('IAM_API_URL')!;
   }
 
+  private get originApplicationName(): string {
+    return this.configService.get<string>('TICKET_HUB_API_APPLICATION_NAME')!;
+  }
+
   private get serviceClientId(): string {
-    return this.configService.get<string>(
-      'TICKET_HUB_API_SERVICE_CLIENT_ID',
-    )!;
+    return this.configService.get<string>('TICKET_HUB_API_SERVICE_CLIENT_ID')!;
   }
 
   private get serviceClientSecret(): string {
@@ -79,7 +86,7 @@ export class AppUserAuthService {
     )!;
   }
 
-  private async login(applicationName: string): Promise<string> {
+  private async login(targetApplicationName: string): Promise<string> {
     const response = await firstValueFrom(
       this.httpService.post<AppUserLoginResponse>(
         `${this.iamApiUrl}/apps-users/login`,
@@ -90,7 +97,8 @@ export class AppUserAuthService {
         {
           headers: {
             'Content-Type': 'application/json',
-            'x-application-name': applicationName,
+            'x-application-name': this.originApplicationName,
+            'x-target-application': targetApplicationName,
           },
         },
       ),
@@ -99,7 +107,7 @@ export class AppUserAuthService {
     const accessToken = response.data?.access_token;
     if (typeof accessToken !== 'string' || accessToken.trim().length === 0) {
       throw new Error(
-        `Failed to log in against iam-api as the ticket-hub-api service app-user for application "${applicationName}": missing or empty "access_token" field`,
+        `Failed to log in against iam-api as the ticket-hub-api service app-user for application "${targetApplicationName}": missing or empty "access_token" field`,
       );
     }
 

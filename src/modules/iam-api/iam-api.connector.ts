@@ -22,7 +22,7 @@ export class IamApiConnector {
     roles: string[],
   ): Promise<InternalUserResponse[]> {
     const token = await this.appUserAuthService.getAccessToken(
-      applicationName,
+      this.configService.get<string>('IAM_API_APPLICATION_NAME')!,
     );
     const response = await firstValueFrom(
       this.httpService.get<InternalUserResponse[]>(
