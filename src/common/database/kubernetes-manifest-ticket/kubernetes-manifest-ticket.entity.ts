@@ -126,9 +126,29 @@ export class KubernetesManifestTicketEntityBuilder {
       'response',
     ];
 
-    const missingField = requiredFields.find(
-      (field) => this.entity[field] === undefined,
-    );
+    // Text fields that must carry content. `response` is intentionally absent:
+    // it starts as an empty string and is filled when a ticket is approved.
+    const nonEmptyTextFields: Array<keyof KubernetesManifestTicketEntity> = [
+      'informer',
+      'assignee',
+      'department',
+      'subject',
+      'description',
+      'namespace',
+      'codeYaml',
+    ];
+
+    const missingField = requiredFields.find((field) => {
+      const value = this.entity[field];
+      if (value === undefined || value === null) {
+        return true;
+      }
+      return (
+        nonEmptyTextFields.includes(field) &&
+        typeof value === 'string' &&
+        value.trim() === ''
+      );
+    });
     if (missingField) {
       throw new Error(
         `Cannot build KubernetesManifestTicketEntity: missing required field "${missingField}"`,
