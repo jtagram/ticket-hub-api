@@ -8,7 +8,7 @@ export class ServerManagementTicketMapper {
     dto: CreateServerManagementTicketDto,
   ): ServerManagementTicketEntity {
     return ServerManagementTicketEntity.builder()
-      .withInformer(dto.informer)
+      .withInformer(dto.informer ?? '')
       .withAssignee(dto.assignee)
       .withDepartment(dto.department)
       .withSubject(dto.subject)

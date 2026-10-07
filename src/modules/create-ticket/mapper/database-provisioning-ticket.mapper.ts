@@ -8,7 +8,7 @@ export class DatabaseProvisioningTicketMapper {
     dto: CreateDatabaseProvisioningTicketDto,
   ): DatabaseProvisioningTicketEntity {
     return DatabaseProvisioningTicketEntity.builder()
-      .withInformer(dto.informer)
+      .withInformer(dto.informer ?? '')
       .withAssignee(dto.assignee)
       .withDepartment(dto.department)
       .withSubject(dto.subject)
