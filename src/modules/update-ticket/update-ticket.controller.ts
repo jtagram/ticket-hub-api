@@ -25,9 +25,7 @@ export class UpdateTicketController {
 
   @Patch('server/management/:number/approve')
   @Roles(Role.ADMIN, Role.SERVER_APPROVER)
-  approveServerManagementTicket(
-    @Param('number', ParseIntPipe) number: number,
-  ) {
+  approveServerManagementTicket(@Param('number', ParseIntPipe) number: number) {
     return this.updateTicketService.approveServerManagementTicket(number);
   }
 
