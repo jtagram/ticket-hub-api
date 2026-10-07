@@ -13,6 +13,8 @@ interface JwksResponse {
 }
 
 const REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+/** Upper bound for one JWKS request, so a hung iam-api cannot stall boot or token verification. */
+export const JWKS_FETCH_TIMEOUT_MS = 5000;
 const UNKNOWN_KEY_REFRESH_COOLDOWN_MS = 30 * 1000;
 
 /**
@@ -74,7 +76,9 @@ export class JwtPublicKeyService implements OnModuleInit {
 
   private async loadPublicKeys(): Promise<void> {
     this.lastFetchAtMs = Date.now();
-    const response = await fetch(`${this.iamApiUrl}/.well-known/jwks.json`);
+    const response = await fetch(`${this.iamApiUrl}/.well-known/jwks.json`, {
+      signal: AbortSignal.timeout(JWKS_FETCH_TIMEOUT_MS),
+    });
 
     if (!response.ok) {
       throw new Error(

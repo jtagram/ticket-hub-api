@@ -8,6 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
 import { Role } from '../roles/role.enum';
+import { ApplicationPayload } from '../jwt/apps-payload';
 import { AuthenticatedUser } from '../jwt/authenticated-user';
 import { ROLES_KEY } from './roles.decorator';
 
@@ -15,6 +16,8 @@ const MISSING_USER_MESSAGE =
   'RolesGuard ran without an authenticated user - JwtAuthGuard must run first';
 const WRONG_APPLICATION_MESSAGE =
   'This token was not issued for the ticket-hub-api application';
+const MISSING_APPLICATION_MESSAGE =
+  'The token does not carry application information';
 const INSUFFICIENT_ROLE_MESSAGE = 'You do not have the required role';
 
 /**
@@ -53,11 +56,18 @@ export class RolesGuard implements CanActivate {
     const ticketHubApiApplicationName = this.configService.get<string>(
       'TICKET_HUB_API_APPLICATION_NAME',
     );
-    if (request.user.apps.application.name !== ticketHubApiApplicationName) {
+    // The claims come from a verified token but are not otherwise validated,
+    // so a token without `apps`/`application` must be a 403, not a TypeError.
+    const application = request.user.apps?.application;
+    if (!application) {
+      throw new ForbiddenException(MISSING_APPLICATION_MESSAGE);
+    }
+
+    if (application.name !== ticketHubApiApplicationName) {
       throw new ForbiddenException(WRONG_APPLICATION_MESSAGE);
     }
 
-    if (!hasOneOfRoles(request.user, requiredRoles)) {
+    if (!hasOneOfRoles(application.roles, requiredRoles)) {
       throw new ForbiddenException(INSUFFICIENT_ROLE_MESSAGE);
     }
 
@@ -66,9 +76,12 @@ export class RolesGuard implements CanActivate {
 }
 
 function hasOneOfRoles(
-  user: AuthenticatedUser,
+  roles: ApplicationPayload['roles'] | undefined,
   requiredRoles: Role[],
 ): boolean {
-  const roleNames = user.apps.application.roles.map((role) => role.name);
+  if (!Array.isArray(roles)) {
+    return false;
+  }
+  const roleNames = roles.map((role) => role?.name);
   return requiredRoles.some((requiredRole) => roleNames.includes(requiredRole));
 }

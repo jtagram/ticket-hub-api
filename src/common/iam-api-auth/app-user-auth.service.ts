@@ -43,6 +43,12 @@ export class AppUserAuthService {
     CachedToken
   >();
 
+  /** Logins in progress, so concurrent callers for one application share one. */
+  private readonly inFlightLoginsByApplicationName = new Map<
+    string,
+    Promise<string>
+  >();
+
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
@@ -56,6 +62,23 @@ export class AppUserAuthService {
       return cached.accessToken;
     }
 
+    const inFlight = this.inFlightLoginsByApplicationName.get(
+      targetApplicationName,
+    );
+    if (inFlight) {
+      return inFlight;
+    }
+
+    // The entry is removed as soon as the login settles (success or failure),
+    // so a failure is shared by the callers waiting on it but never cached.
+    const login = this.loginAndCache(targetApplicationName).finally(() => {
+      this.inFlightLoginsByApplicationName.delete(targetApplicationName);
+    });
+    this.inFlightLoginsByApplicationName.set(targetApplicationName, login);
+    return login;
+  }
+
+  private async loginAndCache(targetApplicationName: string): Promise<string> {
     const accessToken = await this.login(targetApplicationName);
     this.cachedTokensByApplicationName.set(targetApplicationName, {
       accessToken,
