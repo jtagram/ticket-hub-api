@@ -6,11 +6,14 @@
 # Requiere GH_TOKEN con permiso de Actions sobre el repositorio
 # deploy-hub-api.
 #
-# Uso: disparar-deploy-ticket-hub-api.sh <owner> <tag-de-imagen>
+# Uso: disparar-deploy-ticket-hub-api.sh <owner> <tag-de-imagen> [workflow-de-deploy]
+#   workflow-de-deploy: archivo del workflow en deploy-hub-api (por defecto
+#   deploy-ticket-hub-api.yml; el release dev usa deploy-ticket-hub-api-dev.yml)
 set -euo pipefail
 
 OWNER="${1-}"
 IMAGE_TAG="${2-}"
+DEPLOY_WORKFLOW="${3:-deploy-ticket-hub-api.yml}"
 
 if [ -z "$OWNER" ]; then
   echo "disparar-deploy-ticket-hub-api: se esperaba el owner del repositorio como primer argumento" >&2
@@ -27,6 +30,6 @@ if [ -z "${GH_TOKEN-}" ]; then
   exit 1
 fi
 
-gh workflow run deploy-ticket-hub-api.yml \
+gh workflow run "$DEPLOY_WORKFLOW" \
   --repo "$OWNER/deploy-hub-api" \
   --field image_tag="$IMAGE_TAG"
