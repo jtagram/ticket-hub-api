@@ -244,56 +244,6 @@ describe('KubectlCommandTicketsRepository (in-memory db)', () => {
     });
   });
 
-  describe('releaseClaim', () => {
-    it('moves an IN_PROGRESS ticket back to OPEN and returns true', async () => {
-      const saved = await repository.create(buildTicket());
-      await repository.claimForApproval(saved.number);
-
-      const released = await repository.releaseClaim(saved.number);
-
-      expect(released).toBe(true);
-      const found = await repository.findByNumber(saved.number);
-      expect(found?.status).toBe(TicketStatus.OPEN);
-    });
-
-    it('returns false and changes nothing when the ticket is OPEN', async () => {
-      const saved = await repository.create(buildTicket());
-
-      expect(await repository.releaseClaim(saved.number)).toBe(false);
-
-      const found = await repository.findByNumber(saved.number);
-      expect(found?.status).toBe(TicketStatus.OPEN);
-    });
-
-    it('never reopens an APPROVED ticket', async () => {
-      const saved = await repository.create(buildTicket());
-      await typeormRepository.update(
-        { id: saved.id },
-        { status: TicketStatus.APPROVED },
-      );
-
-      expect(await repository.releaseClaim(saved.number)).toBe(false);
-
-      const found = await repository.findByNumber(saved.number);
-      expect(found?.status).toBe(TicketStatus.APPROVED);
-    });
-
-    it('returns false when the ticket does not exist', async () => {
-      expect(await repository.releaseClaim(9999)).toBe(false);
-    });
-
-    it('keeps the response of the ticket untouched', async () => {
-      const saved = await repository.create(buildTicket());
-      await repository.claimForApproval(saved.number);
-      await typeormRepository.update({ id: saved.id }, { response: 'kept' });
-
-      await repository.releaseClaim(saved.number);
-
-      const found = await repository.findByNumber(saved.number);
-      expect(found?.response).toBe('kept');
-    });
-  });
-
   describe('IN_PROGRESS status', () => {
     it('persists IN_PROGRESS through update', async () => {
       const saved = await repository.create(buildTicket());

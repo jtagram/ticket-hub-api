@@ -191,12 +191,12 @@ describe('PATCH /tickets/database/management/:number/approve (e2e)', () => {
         message:
           'infra-hub-api reported that the execution for Database management ticket ' +
           ticket.number +
-          ' failed. The ticket stays OPEN and the execution result was saved in its response; it can be approved again.',
+          ' failed. The ticket stays IN_PROGRESS and the execution result was saved in its response; it will not be executed again.',
         error: 'Bad Gateway',
       });
     });
 
-    it('keeps the ticket OPEN and stores the failed execution result in its response', async () => {
+    it('keeps the ticket IN_PROGRESS and stores the failed execution result in its response', async () => {
       const ticket = await seedDatabaseManagementTicket(testApp.dataSource);
       const failure = infraHubFailure('boom');
       infraHub.manageDatabase.mockResolvedValue(failure);
@@ -204,11 +204,11 @@ describe('PATCH /tickets/database/management/:number/approve (e2e)', () => {
       await call(ticket.number).expect(502);
 
       const row = await findRow(ticket.id);
-      expect(row.status).toBe(TicketStatus.OPEN);
+      expect(row.status).toBe(TicketStatus.IN_PROGRESS);
       expect(row.response).toBe(JSON.stringify(failure.executionResult));
     });
 
-    it('can be approved again after a failed execution', async () => {
+    it('cannot be approved again after a failed execution', async () => {
       const ticket = await seedDatabaseManagementTicket(testApp.dataSource);
       infraHub.manageDatabase.mockResolvedValueOnce(infraHubFailure());
       infraHub.manageDatabase.mockResolvedValueOnce(
@@ -216,14 +216,18 @@ describe('PATCH /tickets/database/management/:number/approve (e2e)', () => {
       );
 
       await call(ticket.number).expect(502);
-      const retry = await call(ticket.number).expect(200);
+      const retry = await call(ticket.number).expect(409);
 
-      expect(retry.body.status).toBe(TicketStatus.APPROVED);
-      expect(infraHub.manageDatabase).toHaveBeenCalledTimes(2);
+      expect(retry.body.message).toBe(
+        'Ticket with number ' +
+          ticket.number +
+          ' is already IN_PROGRESS, it cannot be approved',
+      );
+      expect(infraHub.manageDatabase).toHaveBeenCalledTimes(1);
       const row = await findRow(ticket.id);
-      expect(row.status).toBe(TicketStatus.APPROVED);
+      expect(row.status).toBe(TicketStatus.IN_PROGRESS);
       expect(row.response).toBe(
-        JSON.stringify(infraHubSuccess('second run').executionResult),
+        JSON.stringify(infraHubFailure().executionResult),
       );
     });
 
@@ -485,7 +489,7 @@ describe('PATCH /tickets/database/management/:number/approve (e2e)', () => {
       }
     });
 
-    it('moves the ticket back to OPEN when infra-hub-api rejects the request with a 4xx', async () => {
+    it('leaves the ticket IN_PROGRESS when infra-hub-api rejects the request with a 4xx', async () => {
       const ticket = await seedDatabaseManagementTicket(testApp.dataSource);
       infraHub.manageDatabase.mockRejectedValue(
         new HttpException({ statusCode: 403, message: 'Forbidden' }, 403),
@@ -494,7 +498,7 @@ describe('PATCH /tickets/database/management/:number/approve (e2e)', () => {
       await call(ticket.number).expect(403);
 
       const row = await findRow(ticket.id);
-      expect(row.status).toBe(TicketStatus.OPEN);
+      expect(row.status).toBe(TicketStatus.IN_PROGRESS);
       expect(row.response).toBe('');
     });
   });
@@ -539,7 +543,7 @@ describe('PATCH /tickets/database/management/:number/approve (e2e)', () => {
       expect(row.response).toBe('');
     });
 
-    it('forwards the status and body of an infra-hub-api 4xx and keeps the ticket OPEN', async () => {
+    it('forwards the status and body of an infra-hub-api 4xx and leaves the ticket IN_PROGRESS', async () => {
       const ticket = await seedDatabaseManagementTicket(testApp.dataSource);
       infraHub.manageDatabase.mockRejectedValue(
         new HttpException(
@@ -552,7 +556,7 @@ describe('PATCH /tickets/database/management/:number/approve (e2e)', () => {
 
       expect(response.body.message).toBe('The request payload is invalid');
       const row = await findRow(ticket.id);
-      expect(row.status).toBe(TicketStatus.OPEN);
+      expect(row.status).toBe(TicketStatus.IN_PROGRESS);
     });
 
     it('answers 500 with the generic message when the call fails without an HTTP response and leaves the ticket IN_PROGRESS', async () => {
@@ -572,7 +576,7 @@ describe('PATCH /tickets/database/management/:number/approve (e2e)', () => {
       expect(row.response).toBe('');
     });
 
-    it('allows approving again after infra-hub-api rejected the request', async () => {
+    it('does not allow approving again after infra-hub-api rejected the request', async () => {
       const ticket = await seedDatabaseManagementTicket(testApp.dataSource);
       infraHub.manageDatabase.mockRejectedValueOnce(
         new HttpException({ statusCode: 400, message: 'Bad request' }, 400),
@@ -580,10 +584,14 @@ describe('PATCH /tickets/database/management/:number/approve (e2e)', () => {
       infraHub.manageDatabase.mockResolvedValueOnce(infraHubSuccess());
 
       await call(ticket.number).expect(400);
-      const retry = await call(ticket.number).expect(200);
+      const retry = await call(ticket.number).expect(409);
 
-      expect(retry.body.status).toBe(TicketStatus.APPROVED);
-      expect(infraHub.manageDatabase).toHaveBeenCalledTimes(2);
+      expect(retry.body.message).toBe(
+        'Ticket with number ' +
+          ticket.number +
+          ' is already IN_PROGRESS, it cannot be approved',
+      );
+      expect(infraHub.manageDatabase).toHaveBeenCalledTimes(1);
     });
   });
 

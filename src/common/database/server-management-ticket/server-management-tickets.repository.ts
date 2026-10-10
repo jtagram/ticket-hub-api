@@ -36,18 +36,6 @@ export class ServerManagementTicketsRepository {
     return (result.affected ?? 0) > 0;
   }
 
-  /**
-   * Atomically moves the ticket back from IN_PROGRESS to OPEN. Returns false
-   * when the ticket was not IN_PROGRESS (nothing was changed).
-   */
-  async releaseClaim(number: number): Promise<boolean> {
-    const result = await this.repository.update(
-      { number, status: TicketStatus.IN_PROGRESS },
-      { status: TicketStatus.OPEN },
-    );
-    return (result.affected ?? 0) > 0;
-  }
-
   async findAll(): Promise<ServerManagementTicketEntity[]> {
     return this.repository.find({ order: { number: 'ASC' } });
   }

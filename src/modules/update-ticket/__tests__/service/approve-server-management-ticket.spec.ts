@@ -21,7 +21,6 @@ jest.mock('@nestjs/config', () => ({ ConfigService: class ConfigService {} }));
 type RepositoryMock = {
   findByNumber: jest.Mock<(number: number) => Promise<unknown>>;
   claimForApproval: jest.Mock<(number: number) => Promise<boolean>>;
-  releaseClaim: jest.Mock<(number: number) => Promise<boolean>>;
   update: jest.Mock<(ticket: unknown) => Promise<unknown>>;
 };
 
@@ -29,9 +28,6 @@ function buildRepository(): RepositoryMock {
   return {
     findByNumber: jest.fn<(number: number) => Promise<unknown>>(),
     claimForApproval: jest
-      .fn<(number: number) => Promise<boolean>>()
-      .mockResolvedValue(true),
-    releaseClaim: jest
       .fn<(number: number) => Promise<boolean>>()
       .mockResolvedValue(true),
     update: jest.fn<(ticket: unknown) => Promise<unknown>>(),
@@ -314,11 +310,11 @@ describe('UpdateTicketService.approveServerManagementTicket', () => {
       expect((error as BadGatewayException).getStatus()).toBe(502);
       expect((error as BadGatewayException).message).toBe(
         'infra-hub-api reported that the execution for Server management ticket 42 failed. ' +
-          'The ticket stays OPEN and the execution result was saved in its response; it can be approved again.',
+          'The ticket stays IN_PROGRESS and the execution result was saved in its response; it will not be executed again.',
       );
     });
 
-    it('keeps the ticket OPEN and stores the execution result in its response', async () => {
+    it('keeps the ticket IN_PROGRESS and stores the execution result in its response', async () => {
       const ticket = arrangeFailedExecution();
 
       await expect(service.approveServerManagementTicket(42)).rejects.toThrow(
@@ -327,7 +323,7 @@ describe('UpdateTicketService.approveServerManagementTicket', () => {
 
       expect(target.update).toHaveBeenCalledTimes(1);
       expect(target.update).toHaveBeenCalledWith(ticket);
-      expect(ticket.status).toBe(TicketStatus.OPEN);
+      expect(ticket.status).toBe(TicketStatus.IN_PROGRESS);
       expect(ticket.response).toBe(JSON.stringify(failedExecution));
     });
 
@@ -432,7 +428,6 @@ describe('UpdateTicketService.approveServerManagementTicket', () => {
       expect(mock.findByNumber).not.toHaveBeenCalled();
       expect(mock.update).not.toHaveBeenCalled();
       expect(mock.claimForApproval).not.toHaveBeenCalled();
-      expect(mock.releaseClaim).not.toHaveBeenCalled();
     });
   });
 
@@ -500,7 +495,6 @@ describe('UpdateTicketService.approveServerManagementTicket', () => {
         expect(mock).not.toHaveBeenCalled(),
       );
       expect(target.update).not.toHaveBeenCalled();
-      expect(target.releaseClaim).not.toHaveBeenCalled();
     });
 
     it('throws ConflictException when the ticket is already IN_PROGRESS', async () => {
@@ -539,30 +533,7 @@ describe('UpdateTicketService.approveServerManagementTicket', () => {
       );
     });
 
-    it('does not release the claim after a successful approval', async () => {
-      arrangeSuccess();
-
-      await service.approveServerManagementTicket(42);
-
-      expect(target.releaseClaim).not.toHaveBeenCalled();
-    });
-
-    it('does not release the claim when the execution reports success false', async () => {
-      target.findByNumber.mockResolvedValue(buildTicket());
-      infra.manageServerCommand.mockResolvedValue({
-        executionResult: { ...executionResult, success: false },
-        logId: 'log-2',
-      });
-      target.update.mockResolvedValue({});
-
-      await expect(service.approveServerManagementTicket(42)).rejects.toThrow(
-        BadGatewayException,
-      );
-
-      expect(target.releaseClaim).not.toHaveBeenCalled();
-    });
-
-    it('answers 502 telling the ticket is still IN_PROGRESS when the failed result cannot move it back to OPEN', async () => {
+    it('answers 502 telling the ticket is still IN_PROGRESS when the failed result cannot be saved', async () => {
       target.findByNumber.mockResolvedValue(buildTicket());
       infra.manageServerCommand.mockResolvedValue({
         executionResult: { ...executionResult, success: false },
@@ -577,7 +548,7 @@ describe('UpdateTicketService.approveServerManagementTicket', () => {
       expect(error).toBeInstanceOf(BadGatewayException);
       expect((error as BadGatewayException).message).toBe(
         'infra-hub-api reported that the execution for Server management ticket 42 failed. ' +
-          'The ticket could not be moved back to OPEN and is still IN_PROGRESS: contact an administrator to reconcile it.',
+          'The ticket is still IN_PROGRESS but the execution result could not be saved: contact an administrator to reconcile it.',
       );
     });
   });
@@ -590,7 +561,6 @@ describe('UpdateTicketService.approveServerManagementTicket', () => {
       );
       target.findByNumber.mockResolvedValue(buildTicket());
       infra.manageServerCommand.mockRejectedValue(rejection);
-      target.releaseClaim.mockResolvedValue(true);
       return rejection;
     }
 
@@ -602,52 +572,41 @@ describe('UpdateTicketService.approveServerManagementTicket', () => {
       );
     });
 
-    it('moves the ticket back to OPEN by releasing the claim', async () => {
+    it('never moves the ticket back to OPEN: the repository has no releaseClaim', async () => {
       arrangeRejection();
 
       await expect(service.approveServerManagementTicket(42)).rejects.toThrow(
         HttpException,
       );
 
-      expect(target.releaseClaim).toHaveBeenCalledTimes(1);
-      expect(target.releaseClaim).toHaveBeenCalledWith(42);
+      expect(target).not.toHaveProperty('releaseClaim');
+      expect(target.update).not.toHaveBeenCalled();
     });
 
-    it('also releases the claim on the lowest 4xx status (400)', async () => {
-      arrangeRejection(400);
+    it('behaves the same on the lowest 4xx status (400)', async () => {
+      const rejection = arrangeRejection(400);
 
-      await expect(service.approveServerManagementTicket(42)).rejects.toThrow(
-        HttpException,
+      await expect(service.approveServerManagementTicket(42)).rejects.toBe(
+        rejection,
       );
 
-      expect(target.releaseClaim).toHaveBeenCalledTimes(1);
+      expect(target.update).not.toHaveBeenCalled();
     });
 
-    it('does not save the ticket nor log an error', async () => {
-      arrangeRejection();
+    it('does not save the ticket and logs an error leaving it IN_PROGRESS', async () => {
+      const rejection = arrangeRejection();
 
       await expect(service.approveServerManagementTicket(42)).rejects.toThrow(
         HttpException,
       );
 
       expect(target.update).not.toHaveBeenCalled();
-      expect(logger.error).not.toHaveBeenCalled();
-    });
-
-    it('rethrows the original rejection and logs when releasing the claim fails', async () => {
-      const rejection = arrangeRejection();
-      target.releaseClaim.mockRejectedValue(new Error('database unavailable'));
-
-      await expect(service.approveServerManagementTicket(42)).rejects.toBe(
-        rejection,
-      );
-
       expect(logger.error).toHaveBeenCalledTimes(1);
       expect(logger.error).toHaveBeenCalledWith(
         expect.objectContaining({
           ticketType: 'Server management',
           ticketNumber: 42,
-          err: expect.objectContaining({ message: 'database unavailable' }),
+          err: expect.objectContaining({ message: rejection.message }),
         }),
       );
     });
@@ -666,7 +625,6 @@ describe('UpdateTicketService.approveServerManagementTicket', () => {
         failure,
       );
 
-      expect(target.releaseClaim).not.toHaveBeenCalled();
       expect(target.update).not.toHaveBeenCalled();
     });
 
@@ -682,7 +640,6 @@ describe('UpdateTicketService.approveServerManagementTicket', () => {
         failure,
       );
 
-      expect(target.releaseClaim).not.toHaveBeenCalled();
     });
 
     it('leaves the ticket IN_PROGRESS after a network or timeout error and rethrows it', async () => {
@@ -694,7 +651,6 @@ describe('UpdateTicketService.approveServerManagementTicket', () => {
         failure,
       );
 
-      expect(target.releaseClaim).not.toHaveBeenCalled();
       expect(target.update).not.toHaveBeenCalled();
     });
 
