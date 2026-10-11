@@ -8,12 +8,12 @@
 #
 # Uso: disparar-deploy-ticket-hub-api.sh <owner> <tag-de-imagen> [workflow-de-deploy]
 #   workflow-de-deploy: archivo del workflow en deploy-hub-api (por defecto
-#   deploy-ticket-hub-api.yml; el release dev usa deploy-ticket-hub-api-dev.yml)
+#   deploy-ticket-hub-api-prod.yml; el release dev usa deploy-ticket-hub-api-dev.yml)
 set -euo pipefail
 
 OWNER="${1-}"
 IMAGE_TAG="${2-}"
-DEPLOY_WORKFLOW="${3:-deploy-ticket-hub-api.yml}"
+DEPLOY_WORKFLOW="${3:-deploy-ticket-hub-api-prod.yml}"
 
 if [ -z "$OWNER" ]; then
   echo "disparar-deploy-ticket-hub-api: se esperaba el owner del repositorio como primer argumento" >&2
