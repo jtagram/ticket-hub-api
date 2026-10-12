@@ -60,7 +60,7 @@ export const ApiCreateDatabaseProvisioningTicket = () =>
     }),
     ApiBadRequestResponse({
       description: badRequestDescription(
-        '- `newDbName must be a valid lowercase Postgres identifier`: `newDbName` does not match `^[a-z_][a-z0-9_]*$`.',
+        '- `newDbName must be a valid lowercase Postgres identifier`: `newDbName` does not use only lowercase letters, digits and underscores, or starts with a digit.',
       ),
     }),
   );
