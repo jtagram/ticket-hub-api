@@ -1,7 +1,6 @@
 import { KubernetesManifestTicketEntity } from '../../../common/database/kubernetes-manifest-ticket/kubernetes-manifest-ticket.entity';
 import { TicketStatus } from '../../../common/database/ticket-status.enum';
 import {
-  KubernetesManifestAction,
   ManageKubernetesManifestRequest,
 } from '../../infra-hub-api/infra-hub-api.types';
 import { CreateKubernetesManifestTicketDto } from '../dto/create-kubernetes-manifest-ticket.dto';
@@ -30,7 +29,7 @@ export class KubernetesManifestTicketMapper {
     return {
       numberOfTickets: ticket.number,
       namespace: ticket.namespace,
-      action: ticket.action as KubernetesManifestAction,
+      action: ticket.action,
       manifest: ticket.codeYaml,
     };
   }

@@ -10,6 +10,7 @@ import { ROLES_KEY } from '../../../../common/guards/roles.decorator';
 import { Role } from '../../../../common/roles/role.enum';
 import { SearchTicketController } from '../../search-ticket.controller';
 import { SearchTicketService } from '../../search-ticket.service';
+import { prototypeMethod } from '../../../../../test/helpers/prototype-method';
 
 // @nestjs/typeorm is ESM-only and Jest runs as CommonJS. The code under test is
 // built by hand below, so the injection decorator can be a no-op.
@@ -87,7 +88,7 @@ describe('SearchTicketController.findKubectlCommandTicketByNumber', () => {
 
   it('is routed as GET /tickets/kubernetes/kubectl/:number', () => {
     const handler =
-      SearchTicketController.prototype.findKubectlCommandTicketByNumber;
+      prototypeMethod(SearchTicketController.prototype, 'findKubectlCommandTicketByNumber');
 
     expect(Reflect.getMetadata(PATH_METADATA, SearchTicketController)).toBe(
       'tickets',
@@ -114,9 +115,9 @@ describe('SearchTicketController.findKubectlCommandTicketByNumber', () => {
   });
 
   it('is restricted to the roles ADMIN, KUBERNATES, KUBERNATES_APPROVER', () => {
-    const roles = new Reflector().get(
+    const roles = new Reflector().get<Role[]>(
       ROLES_KEY,
-      SearchTicketController.prototype.findKubectlCommandTicketByNumber,
+      prototypeMethod(SearchTicketController.prototype, 'findKubectlCommandTicketByNumber'),
     );
 
     expect(roles).toEqual([

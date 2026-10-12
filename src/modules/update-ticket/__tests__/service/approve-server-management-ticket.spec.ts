@@ -251,13 +251,13 @@ describe('UpdateTicketService.approveServerManagementTicket', () => {
   it('updates the ticket only after infra-hub-api answered', async () => {
     const order: string[] = [];
     target.findByNumber.mockResolvedValue(buildTicket());
-    infra.manageServerCommand.mockImplementation(async () => {
+    infra.manageServerCommand.mockImplementation(() => {
       order.push('infra');
-      return { executionResult, logId: 'log-1' };
+      return Promise.resolve({ executionResult, logId: 'log-1' });
     });
-    target.update.mockImplementation(async () => {
+    target.update.mockImplementation(() => {
       order.push('update');
-      return {};
+      return Promise.resolve({});
     });
 
     await service.approveServerManagementTicket(42);
@@ -453,13 +453,13 @@ describe('UpdateTicketService.approveServerManagementTicket', () => {
     it('claims the ticket before calling infra-hub-api', async () => {
       const order: string[] = [];
       target.findByNumber.mockResolvedValue(buildTicket());
-      target.claimForApproval.mockImplementation(async () => {
+      target.claimForApproval.mockImplementation(() => {
         order.push('claim');
-        return true;
+        return Promise.resolve(true);
       });
-      infra.manageServerCommand.mockImplementation(async () => {
+      infra.manageServerCommand.mockImplementation(() => {
         order.push('infra');
-        return { executionResult, logId: 'log-1' };
+        return Promise.resolve({ executionResult, logId: 'log-1' });
       });
       target.update.mockResolvedValue({});
 

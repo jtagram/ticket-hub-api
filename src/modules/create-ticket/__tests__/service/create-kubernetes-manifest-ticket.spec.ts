@@ -61,7 +61,7 @@ describe('CreateTicketService.createKubernetesManifestTicket', () => {
   it('maps the dto to an OPEN entity and passes it to the matching repository', async () => {
     target.create.mockResolvedValue({ id: 1, number: 10 });
 
-    await service.createKubernetesManifestTicket(dto as never);
+    await service.createKubernetesManifestTicket(dto);
 
     expect(target.create).toHaveBeenCalledTimes(1);
     expect(target.create.mock.calls[0][0]).toMatchObject({
@@ -74,7 +74,7 @@ describe('CreateTicketService.createKubernetesManifestTicket', () => {
   it('does not use any other repository', async () => {
     target.create.mockResolvedValue({});
 
-    await service.createKubernetesManifestTicket(dto as never);
+    await service.createKubernetesManifestTicket(dto);
 
     others.forEach((mock) => expect(mock.create).not.toHaveBeenCalled());
   });
@@ -84,7 +84,7 @@ describe('CreateTicketService.createKubernetesManifestTicket', () => {
     target.create.mockResolvedValue(saved);
 
     await expect(
-      service.createKubernetesManifestTicket(dto as never),
+      service.createKubernetesManifestTicket(dto),
     ).resolves.toBe(saved);
   });
 
@@ -93,7 +93,7 @@ describe('CreateTicketService.createKubernetesManifestTicket', () => {
       service.createKubernetesManifestTicket({
         ...dto,
         codeYaml: '   ',
-      } as never),
+      }),
     ).rejects.toThrow('missing required field "codeYaml"');
 
     expect(target.create).not.toHaveBeenCalled();
@@ -104,7 +104,7 @@ describe('CreateTicketService.createKubernetesManifestTicket', () => {
     target.create.mockRejectedValue(failure);
 
     await expect(
-      service.createKubernetesManifestTicket(dto as never),
+      service.createKubernetesManifestTicket(dto),
     ).rejects.toBe(failure);
   });
 });

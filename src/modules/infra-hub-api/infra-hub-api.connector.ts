@@ -37,7 +37,10 @@ export class InfraHubApiConnector {
       return response.data;
     } catch (error) {
       if (isAxiosError(error) && error.response) {
-        throw new HttpException(error.response.data, error.response.status);
+        throw new HttpException(
+          error.response.data as string | Record<string, unknown>,
+          error.response.status,
+        );
       }
       throw error;
     }

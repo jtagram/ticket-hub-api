@@ -58,7 +58,7 @@ describe('CreateTicketService.createServerManagementTicket', () => {
   it('maps the dto to an OPEN entity and passes it to the matching repository', async () => {
     target.create.mockResolvedValue({ id: 1, number: 10 });
 
-    await service.createServerManagementTicket(dto as never);
+    await service.createServerManagementTicket(dto);
 
     expect(target.create).toHaveBeenCalledTimes(1);
     expect(target.create.mock.calls[0][0]).toMatchObject({
@@ -71,7 +71,7 @@ describe('CreateTicketService.createServerManagementTicket', () => {
   it('does not use any other repository', async () => {
     target.create.mockResolvedValue({});
 
-    await service.createServerManagementTicket(dto as never);
+    await service.createServerManagementTicket(dto);
 
     others.forEach((mock) => expect(mock.create).not.toHaveBeenCalled());
   });
@@ -81,7 +81,7 @@ describe('CreateTicketService.createServerManagementTicket', () => {
     target.create.mockResolvedValue(saved);
 
     await expect(
-      service.createServerManagementTicket(dto as never),
+      service.createServerManagementTicket(dto),
     ).resolves.toBe(saved);
   });
 
@@ -90,7 +90,7 @@ describe('CreateTicketService.createServerManagementTicket', () => {
       service.createServerManagementTicket({
         ...dto,
         codeAnsible: '   ',
-      } as never),
+      }),
     ).rejects.toThrow('missing required field "codeAnsible"');
 
     expect(target.create).not.toHaveBeenCalled();
@@ -101,7 +101,7 @@ describe('CreateTicketService.createServerManagementTicket', () => {
     target.create.mockRejectedValue(failure);
 
     await expect(
-      service.createServerManagementTicket(dto as never),
+      service.createServerManagementTicket(dto),
     ).rejects.toBe(failure);
   });
 });

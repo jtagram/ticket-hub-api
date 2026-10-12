@@ -61,7 +61,7 @@ describe('CreateTicketService.createDatabaseManagementTicket', () => {
   it('maps the dto to an OPEN entity and passes it to the matching repository', async () => {
     target.create.mockResolvedValue({ id: 1, number: 10 });
 
-    await service.createDatabaseManagementTicket(dto as never);
+    await service.createDatabaseManagementTicket(dto);
 
     expect(target.create).toHaveBeenCalledTimes(1);
     expect(target.create.mock.calls[0][0]).toMatchObject({
@@ -74,7 +74,7 @@ describe('CreateTicketService.createDatabaseManagementTicket', () => {
   it('does not use any other repository', async () => {
     target.create.mockResolvedValue({});
 
-    await service.createDatabaseManagementTicket(dto as never);
+    await service.createDatabaseManagementTicket(dto);
 
     others.forEach((mock) => expect(mock.create).not.toHaveBeenCalled());
   });
@@ -84,7 +84,7 @@ describe('CreateTicketService.createDatabaseManagementTicket', () => {
     target.create.mockResolvedValue(saved);
 
     await expect(
-      service.createDatabaseManagementTicket(dto as never),
+      service.createDatabaseManagementTicket(dto),
     ).resolves.toBe(saved);
   });
 
@@ -93,7 +93,7 @@ describe('CreateTicketService.createDatabaseManagementTicket', () => {
       service.createDatabaseManagementTicket({
         ...dto,
         sqlCode: '   ',
-      } as never),
+      }),
     ).rejects.toThrow('missing required field "sqlCode"');
 
     expect(target.create).not.toHaveBeenCalled();
@@ -104,7 +104,7 @@ describe('CreateTicketService.createDatabaseManagementTicket', () => {
     target.create.mockRejectedValue(failure);
 
     await expect(
-      service.createDatabaseManagementTicket(dto as never),
+      service.createDatabaseManagementTicket(dto),
     ).rejects.toBe(failure);
   });
 });

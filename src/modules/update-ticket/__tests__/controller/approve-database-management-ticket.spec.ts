@@ -15,6 +15,7 @@ import { ROLES_KEY } from '../../../../common/guards/roles.decorator';
 import { Role } from '../../../../common/roles/role.enum';
 import { UpdateTicketController } from '../../update-ticket.controller';
 import { UpdateTicketService } from '../../update-ticket.service';
+import { prototypeMethod } from '../../../../../test/helpers/prototype-method';
 
 // @nestjs/typeorm is ESM-only and Jest runs as CommonJS. The code under test is
 // built by hand below, so the injection decorator can be a no-op.
@@ -95,7 +96,7 @@ describe('UpdateTicketController.approveDatabaseManagementTicket', () => {
 
   it('is routed as PATCH /tickets/database/management/:number/approve', () => {
     const handler =
-      UpdateTicketController.prototype.approveDatabaseManagementTicket;
+      prototypeMethod(UpdateTicketController.prototype, 'approveDatabaseManagementTicket');
 
     expect(Reflect.getMetadata(PATH_METADATA, UpdateTicketController)).toBe(
       'tickets',
@@ -122,9 +123,9 @@ describe('UpdateTicketController.approveDatabaseManagementTicket', () => {
   });
 
   it('is restricted to the roles ADMIN, DATABASE_APPROVER', () => {
-    const roles = new Reflector().get(
+    const roles = new Reflector().get<Role[]>(
       ROLES_KEY,
-      UpdateTicketController.prototype.approveDatabaseManagementTicket,
+      prototypeMethod(UpdateTicketController.prototype, 'approveDatabaseManagementTicket'),
     );
 
     expect(roles).toEqual([Role.ADMIN, Role.DATABASE_APPROVER]);

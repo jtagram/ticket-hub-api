@@ -33,6 +33,9 @@ import {
   seedServerManagementTicket,
 } from '../helpers/ticket-fixtures';
 import { createTicketTestApp, TicketTestApp } from '../helpers/ticket-test-app';
+import { httpServerOf } from '../helpers/http-server';
+import { bodyOf, ErrorBody } from '../helpers/response-types';
+import { prototypeMethod } from '../helpers/prototype-method';
 
 const ENDPOINT = '/tickets/database/provisioning';
 const USER_EMAIL = 'approver@example.com';
@@ -62,7 +65,7 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
   });
 
   function call(number: number | string, authorization: string | null = auth) {
-    const req = request(testApp.app.getHttpServer()).patch(
+    const req = request(httpServerOf(testApp.app)).patch(
       ENDPOINT + '/' + number + '/approve',
     );
     if (authorization) {
@@ -171,10 +174,10 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
 
       const response = await call(ticket.number).expect(200);
 
-      expect(response.body.response).toBe(
+      expect(bodyOf<DatabaseProvisioningTicketEntity>(response).response).toBe(
         JSON.stringify(payload.executionResult),
       );
-      expect(response.body.response).not.toContain('logId');
+      expect(bodyOf<DatabaseProvisioningTicketEntity>(response).response).not.toContain('logId');
       const row = await findRow(ticket.id);
       expect(row.response).toBe(JSON.stringify(payload.executionResult));
     });
@@ -217,7 +220,7 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
       await call(ticket.number).expect(502);
       const retry = await call(ticket.number).expect(409);
 
-      expect(retry.body.message).toBe(
+      expect(bodyOf<ErrorBody>(retry).message).toBe(
         'Ticket with number ' +
           ticket.number +
           ' is already IN_PROGRESS, it cannot be approved',
@@ -303,7 +306,7 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
       await call(ticket.number).expect(200);
       const response = await call(ticket.number).expect(409);
 
-      expect(response.body.message).toBe(
+      expect(bodyOf<ErrorBody>(response).message).toBe(
         'Ticket with number ' +
           ticket.number +
           ' is already APPROVED, it cannot be approved',
@@ -365,7 +368,7 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
 
       const response = await call(ticket.number).expect(409);
 
-      expect(response.body.message).toBe(
+      expect(bodyOf<ErrorBody>(response).message).toBe(
         'Ticket with number ' +
           ticket.number +
           ' is already REJECTED, it cannot be approved',
@@ -420,13 +423,13 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
         DatabaseProvisioningTicketsRepository,
         { strict: false },
       );
-      const originalFindByNumber = repository.findByNumber.bind(repository);
+      const originalFindByNumber = prototypeMethod(repository, 'findByNumber');
       // Both requests read the ticket as OPEN before either of them claims it.
       const bothHaveRead = createBarrier(2);
       const findSpy = jest
         .spyOn(repository, 'findByNumber')
         .mockImplementation(async (number: number) => {
-          const found = await originalFindByNumber(number);
+          const found = await Reflect.apply(originalFindByNumber, repository, [number]);
           await bothHaveRead.arrive();
           return found;
         });
@@ -440,7 +443,7 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
 
         expect([first.status, second.status].sort()).toEqual([200, 409]);
         const loser = first.status === 409 ? first : second;
-        expect(loser.body.message).toBe(
+        expect(bodyOf<ErrorBody>(loser).message).toBe(
           'Ticket with number ' +
             ticket.number +
             ' could not be approved: it was claimed by another request or it is no longer OPEN',
@@ -461,7 +464,7 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
       await call(ticket.number).expect(500);
       const retry = await call(ticket.number).expect(409);
 
-      expect(retry.body.message).toBe(
+      expect(bodyOf<ErrorBody>(retry).message).toBe(
         'Ticket with number ' +
           ticket.number +
           ' is already IN_PROGRESS, it cannot be approved',
@@ -554,7 +557,7 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
 
       const response = await call(ticket.number).expect(422);
 
-      expect(response.body.message).toBe('The request payload is invalid');
+      expect(bodyOf<ErrorBody>(response).message).toBe('The request payload is invalid');
       const row = await findRow(ticket.id);
       expect(row.status).toBe(TicketStatus.IN_PROGRESS);
     });
@@ -586,7 +589,7 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
       await call(ticket.number).expect(400);
       const retry = await call(ticket.number).expect(409);
 
-      expect(retry.body.message).toBe(
+      expect(bodyOf<ErrorBody>(retry).message).toBe(
         'Ticket with number ' +
           ticket.number +
           ' is already IN_PROGRESS, it cannot be approved',
@@ -601,7 +604,7 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
       infraHub.createDatabase.mockResolvedValue(infraHubSuccess());
       const response = await call(ticket.number, null).expect(401);
 
-      expect(response.body.message).toBe('Missing or malformed bearer token');
+      expect(bodyOf<ErrorBody>(response).message).toBe('Missing or malformed bearer token');
     });
 
     it('returns 401 when the token is signed with an unknown key', async () => {
@@ -612,7 +615,7 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
         'Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6Im90aGVyIn0.e30.invalid',
       ).expect(401);
 
-      expect(response.body.message).toBe('Invalid or expired token');
+      expect(bodyOf<ErrorBody>(response).message).toBe('Invalid or expired token');
     });
 
     it('returns 403 when the user only has the COMMON_USER role', async () => {
@@ -626,7 +629,7 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
         }),
       ).expect(403);
 
-      expect(response.body.message).toBe('You do not have the required role');
+      expect(bodyOf<ErrorBody>(response).message).toBe('You do not have the required role');
     });
 
     it('returns 403 when the user only has roles of another domain', async () => {
@@ -653,7 +656,7 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
         }),
       ).expect(403);
 
-      expect(response.body.message).toBe(
+      expect(bodyOf<ErrorBody>(response).message).toBe(
         'This token was not issued for the ticket-hub-api application',
       );
     });
@@ -666,7 +669,7 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
         authorizationHeaderForClaims({ email: 'user@example.com' }),
       ).expect(403);
 
-      expect(response.body.message).toBe(
+      expect(bodyOf<ErrorBody>(response).message).toBe(
         'The token does not carry application information',
       );
     });
@@ -682,7 +685,7 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
         }),
       ).expect(403);
 
-      expect(response.body.message).toBe('You do not have the required role');
+      expect(bodyOf<ErrorBody>(response).message).toBe('You do not have the required role');
     });
 
     it('does not touch the ticket nor infra-hub-api when the user is forbidden', async () => {

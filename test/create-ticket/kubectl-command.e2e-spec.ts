@@ -18,6 +18,8 @@ import {
   authorizationHeaderFor,
   authorizationHeaderForClaims,
 } from '../helpers/test-auth';
+import { httpServerOf } from '../helpers/http-server';
+import { bodyOf, ErrorBody } from '../helpers/response-types';
 
 const ENDPOINT = '/tickets/kubernetes/kubectl';
 const USER_EMAIL = 'kubectl.user@example.com';
@@ -54,7 +56,7 @@ describe('POST /tickets/kubernetes/kubectl (e2e)', () => {
   });
 
   function post(body: unknown, authorization: string | null = auth) {
-    const req = request(testApp.app.getHttpServer()).post(ENDPOINT);
+    const req = request(httpServerOf(testApp.app)).post(ENDPOINT);
     if (authorization) {
       req.set('Authorization', authorization);
     }
@@ -84,8 +86,8 @@ describe('POST /tickets/kubernetes/kubectl (e2e)', () => {
         .getRepository(KubectlCommandTicketEntity)
         .find();
       expect(rows).toHaveLength(1);
-      expect(rows[0].id).toBe(response.body.id);
-      expect(rows[0].number).toBe(response.body.number);
+      expect(rows[0].id).toBe(bodyOf<KubectlCommandTicketEntity>(response).id);
+      expect(rows[0].number).toBe(bodyOf<KubectlCommandTicketEntity>(response).number);
       expect(rows[0].informer).toBe(USER_EMAIL);
       expect(rows[0].status).toBe(TicketStatus.OPEN);
       expect(rows[0].response).toBe('');
@@ -99,8 +101,8 @@ describe('POST /tickets/kubernetes/kubectl (e2e)', () => {
       );
       const third = await post(validPayload({ subject: 'Third' })).expect(201);
 
-      expect(second.body.number).toBeGreaterThan(first.body.number);
-      expect(third.body.number).toBeGreaterThan(second.body.number);
+      expect(bodyOf<KubectlCommandTicketEntity>(second).number).toBeGreaterThan(bodyOf<KubectlCommandTicketEntity>(first).number);
+      expect(bodyOf<KubectlCommandTicketEntity>(third).number).toBeGreaterThan(bodyOf<KubectlCommandTicketEntity>(second).number);
     });
 
     it('ignores an informer sent in the body and stores the authenticated user email', async () => {
@@ -108,7 +110,7 @@ describe('POST /tickets/kubernetes/kubectl (e2e)', () => {
         validPayload({ informer: 'someone.else@example.com' }),
       ).expect(201);
 
-      expect(response.body.informer).toBe(USER_EMAIL);
+      expect(bodyOf<KubectlCommandTicketEntity>(response).informer).toBe(USER_EMAIL);
       const rows = await testApp.dataSource
         .getRepository(KubectlCommandTicketEntity)
         .find();
@@ -120,7 +122,7 @@ describe('POST /tickets/kubernetes/kubectl (e2e)', () => {
         validPayload({ informer: 'not-an-email' }),
       ).expect(400);
 
-      expect(response.body.message).toEqual(['informer must be an email']);
+      expect(bodyOf<ErrorBody>(response).message).toEqual(['informer must be an email']);
     });
   });
 
@@ -131,9 +133,9 @@ describe('POST /tickets/kubernetes/kubectl (e2e)', () => {
 
       const response = await post(payload).expect(400);
 
-      expect(response.body.statusCode).toBe(400);
-      expect(response.body.error).toBe('Bad Request');
-      expect(response.body.message).toEqual(
+      expect(bodyOf<ErrorBody>(response).statusCode).toBe(400);
+      expect(bodyOf<ErrorBody>(response).error).toBe('Bad Request');
+      expect(bodyOf<ErrorBody>(response).message).toEqual(
         expect.arrayContaining(['subject must be a string']),
       );
     });
@@ -143,7 +145,7 @@ describe('POST /tickets/kubernetes/kubectl (e2e)', () => {
         validPayload({ subject: 'a'.repeat(501) }),
       ).expect(400);
 
-      expect(response.body.message).toEqual([
+      expect(bodyOf<ErrorBody>(response).message).toEqual([
         'subject must be shorter than or equal to 500 characters',
       ]);
     });
@@ -153,7 +155,7 @@ describe('POST /tickets/kubernetes/kubectl (e2e)', () => {
         400,
       );
 
-      expect(response.body.message).toEqual([
+      expect(bodyOf<ErrorBody>(response).message).toEqual([
         'property unexpected should not exist',
       ]);
     });
@@ -164,7 +166,7 @@ describe('POST /tickets/kubernetes/kubectl (e2e)', () => {
 
       const response = await post(payload).expect(201);
 
-      expect(response.body.informer).toBe(USER_EMAIL);
+      expect(bodyOf<KubectlCommandTicketEntity>(response).informer).toBe(USER_EMAIL);
       const rows = await testApp.dataSource
         .getRepository(KubectlCommandTicketEntity)
         .find();
@@ -175,7 +177,7 @@ describe('POST /tickets/kubernetes/kubectl (e2e)', () => {
     it('returns 400 when the informer is present but empty', async () => {
       const response = await post(validPayload({ informer: '' })).expect(400);
 
-      expect(response.body.message).toEqual(
+      expect(bodyOf<ErrorBody>(response).message).toEqual(
         expect.arrayContaining(['informer must be an email']),
       );
     });
@@ -185,7 +187,7 @@ describe('POST /tickets/kubernetes/kubectl (e2e)', () => {
         400,
       );
 
-      expect(response.body.message).toEqual(
+      expect(bodyOf<ErrorBody>(response).message).toEqual(
         expect.arrayContaining(['kubectlCommand must be a string']),
       );
     });
@@ -202,7 +204,7 @@ describe('POST /tickets/kubernetes/kubectl (e2e)', () => {
     it('returns 400 when a required field is whitespace only', async () => {
       const response = await post(validPayload({ subject: '   ' })).expect(400);
 
-      expect(response.body.message).toEqual(['subject must not be blank']);
+      expect(bodyOf<ErrorBody>(response).message).toEqual(['subject must not be blank']);
       const count = await testApp.dataSource
         .getRepository(KubectlCommandTicketEntity)
         .count();
@@ -214,7 +216,7 @@ describe('POST /tickets/kubernetes/kubectl (e2e)', () => {
         validPayload({ kubectlCommand: '   ' }),
       ).expect(400);
 
-      expect(response.body.message).toEqual([
+      expect(bodyOf<ErrorBody>(response).message).toEqual([
         'kubectlCommand must not be blank',
       ]);
       const count = await testApp.dataSource
@@ -228,7 +230,7 @@ describe('POST /tickets/kubernetes/kubectl (e2e)', () => {
         validPayload({ description: ' \t\r\n ' }),
       ).expect(400);
 
-      expect(response.body.message).toEqual(['description must not be blank']);
+      expect(bodyOf<ErrorBody>(response).message).toEqual(['description must not be blank']);
       const count = await testApp.dataSource
         .getRepository(KubectlCommandTicketEntity)
         .count();
@@ -240,7 +242,7 @@ describe('POST /tickets/kubernetes/kubectl (e2e)', () => {
     it('returns 401 when the request has no bearer token', async () => {
       const response = await post(validPayload(), null).expect(401);
 
-      expect(response.body.message).toBe('Missing or malformed bearer token');
+      expect(bodyOf<ErrorBody>(response).message).toBe('Missing or malformed bearer token');
     });
 
     it('returns 401 when the token is signed with an unknown key', async () => {
@@ -249,7 +251,7 @@ describe('POST /tickets/kubernetes/kubectl (e2e)', () => {
         'Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6Im90aGVyIn0.e30.invalid',
       ).expect(401);
 
-      expect(response.body.message).toBe('Invalid or expired token');
+      expect(bodyOf<ErrorBody>(response).message).toBe('Invalid or expired token');
     });
 
     it('returns 403 when the user only has the COMMON_USER role', async () => {
@@ -261,7 +263,7 @@ describe('POST /tickets/kubernetes/kubectl (e2e)', () => {
         }),
       ).expect(403);
 
-      expect(response.body.message).toBe('You do not have the required role');
+      expect(bodyOf<ErrorBody>(response).message).toBe('You do not have the required role');
     });
 
     it('returns 403 when the user only has roles of another domain', async () => {
@@ -284,7 +286,7 @@ describe('POST /tickets/kubernetes/kubectl (e2e)', () => {
         }),
       ).expect(403);
 
-      expect(response.body.message).toBe(
+      expect(bodyOf<ErrorBody>(response).message).toBe(
         'This token was not issued for the ticket-hub-api application',
       );
     });
@@ -295,7 +297,7 @@ describe('POST /tickets/kubernetes/kubectl (e2e)', () => {
         authorizationHeaderForClaims({ email: 'user@example.com' }),
       ).expect(403);
 
-      expect(response.body.message).toBe(
+      expect(bodyOf<ErrorBody>(response).message).toBe(
         'The token does not carry application information',
       );
     });

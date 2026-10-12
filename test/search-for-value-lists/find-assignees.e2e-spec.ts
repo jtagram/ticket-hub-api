@@ -23,6 +23,8 @@ import {
   TEST_APPLICATION_NAME,
 } from '../helpers/test-auth';
 import { createTicketTestApp, TicketTestApp } from '../helpers/ticket-test-app';
+import { httpServerOf } from '../helpers/http-server';
+import { bodyOf, ErrorBody } from '../helpers/response-types';
 
 const ENDPOINT = '/search-for-value-lists/assignees';
 const USER_EMAIL = 'user@example.com';
@@ -56,7 +58,7 @@ describe('GET /search-for-value-lists/assignees (e2e)', () => {
   });
 
   function call(authorization: string | null = auth) {
-    const req = request(testApp.app.getHttpServer()).get(ENDPOINT);
+    const req = request(httpServerOf(testApp.app)).get(ENDPOINT);
     if (authorization) {
       req.set('Authorization', authorization);
     }
@@ -151,7 +153,7 @@ describe('GET /search-for-value-lists/assignees (e2e)', () => {
     it('returns 401 when the request has no bearer token', async () => {
       const response = await call(null).expect(401);
 
-      expect(response.body.message).toBe('Missing or malformed bearer token');
+      expect(bodyOf<ErrorBody>(response).message).toBe('Missing or malformed bearer token');
       expect(iam.findInternalUsersByRole).not.toHaveBeenCalled();
     });
 
@@ -160,7 +162,7 @@ describe('GET /search-for-value-lists/assignees (e2e)', () => {
         'Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6Im90aGVyIn0.e30.invalid',
       ).expect(401);
 
-      expect(response.body.message).toBe('Invalid or expired token');
+      expect(bodyOf<ErrorBody>(response).message).toBe('Invalid or expired token');
     });
 
     it('returns 403 when the user only has the COMMON_USER role', async () => {
@@ -171,7 +173,7 @@ describe('GET /search-for-value-lists/assignees (e2e)', () => {
         }),
       ).expect(403);
 
-      expect(response.body.message).toBe('You do not have the required role');
+      expect(bodyOf<ErrorBody>(response).message).toBe('You do not have the required role');
       expect(iam.findInternalUsersByRole).not.toHaveBeenCalled();
     });
 
@@ -184,7 +186,7 @@ describe('GET /search-for-value-lists/assignees (e2e)', () => {
         }),
       ).expect(403);
 
-      expect(response.body.message).toBe(
+      expect(bodyOf<ErrorBody>(response).message).toBe(
         'This token was not issued for the ticket-hub-api application',
       );
       expect(iam.findInternalUsersByRole).not.toHaveBeenCalled();
@@ -195,7 +197,7 @@ describe('GET /search-for-value-lists/assignees (e2e)', () => {
         authorizationHeaderForClaims({ email: 'user@example.com' }),
       ).expect(403);
 
-      expect(response.body.message).toBe(
+      expect(bodyOf<ErrorBody>(response).message).toBe(
         'The token does not carry application information',
       );
       expect(iam.findInternalUsersByRole).not.toHaveBeenCalled();

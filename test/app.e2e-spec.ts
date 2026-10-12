@@ -13,6 +13,8 @@ import { Role } from '../src/common/roles/role.enum';
 import { AppTestApp, createAppTestApp } from './helpers/app-test-app';
 import { infraHubSuccess, resetFake } from './helpers/outbound-fakes';
 import { authorizationHeaderFor } from './helpers/test-auth';
+import { httpServerOf } from './helpers/http-server';
+import { bodyOf } from './helpers/response-types';
 
 // Smoke suite: the REAL AppModule (see helpers/app-test-app.ts for what is
 // stubbed). Per-endpoint behavior is covered by the module-level e2e suites.
@@ -42,7 +44,7 @@ describe('AppModule (e2e smoke)', () => {
   });
 
   function http() {
-    return request(testApp.app.getHttpServer());
+    return request(httpServerOf(testApp.app));
   }
 
   it('GET / returns Hello World without a token (public route)', async () => {
@@ -95,12 +97,12 @@ describe('AppModule (e2e smoke)', () => {
       })
       .expect(201);
 
-    expect(created.body.status).toBe(TicketStatus.OPEN);
+    expect(bodyOf<ServerManagementTicketEntity>(created).status).toBe(TicketStatus.OPEN);
     const rows = await testApp.dataSource
       .getRepository(ServerManagementTicketEntity)
       .find();
     expect(rows).toHaveLength(1);
-    expect(rows[0].number).toBe(created.body.number);
+    expect(rows[0].number).toBe(bodyOf<ServerManagementTicketEntity>(created).number);
 
     const listed = await http()
       .get('/tickets/server/management')
@@ -108,22 +110,22 @@ describe('AppModule (e2e smoke)', () => {
       .expect(200);
     expect(listed.body).toEqual([
       expect.objectContaining({
-        number: created.body.number,
+        number: bodyOf<ServerManagementTicketEntity>(created).number,
         subject: 'Restart web servers',
       }),
     ]);
 
     testApp.infraHub.manageServerCommand.mockResolvedValue(infraHubSuccess());
     const approved = await http()
-      .patch(`/tickets/server/management/${created.body.number}/approve`)
+      .patch(`/tickets/server/management/${bodyOf<ServerManagementTicketEntity>(created).number}/approve`)
       .set('Authorization', serverApprover)
       .expect(200);
-    expect(approved.body.status).toBe(TicketStatus.APPROVED);
+    expect(bodyOf<ServerManagementTicketEntity>(approved).status).toBe(TicketStatus.APPROVED);
     expect(testApp.infraHub.manageServerCommand).toHaveBeenCalledTimes(1);
 
     const row = await testApp.dataSource
       .getRepository(ServerManagementTicketEntity)
-      .findOneByOrFail({ id: created.body.id });
+      .findOneByOrFail({ id: bodyOf<ServerManagementTicketEntity>(created).id });
     expect(row.status).toBe(TicketStatus.APPROVED);
   });
 

@@ -52,7 +52,6 @@ describe('UpdateTicketService.rejectKubernetesManifestTicket', () => {
   let target: RepositoryMock;
   let others: RepositoryMock[];
   let infra: Record<string, InfraMock>;
-  let otherInfra: InfraMock[];
   let service: UpdateTicketService;
   let logger: { error: jest.Mock };
 
@@ -77,12 +76,6 @@ describe('UpdateTicketService.rejectKubernetesManifestTicket', () => {
       repositories.dbp,
       repositories.srv,
       repositories.kub,
-    ];
-    otherInfra = [
-      infra.manageDatabase,
-      infra.createDatabase,
-      infra.manageServerCommand,
-      infra.executeKubectlCommand,
     ];
     logger = { error: jest.fn() };
     service = new UpdateTicketService(

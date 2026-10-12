@@ -6,6 +6,7 @@ import { Role } from '../../../../common/roles/role.enum';
 import { ROLES_KEY } from '../../../../common/guards/roles.decorator';
 import { SearchForValueListsController } from '../../search-for-value-lists.controller';
 import { SearchForValueListsService } from '../../search-for-value-lists.service';
+import { prototypeMethod } from '../../../../../test/helpers/prototype-method';
 
 // The service reaches ESM-only packages (@nestjs/axios, @nestjs/config).
 jest.mock('@nestjs/axios', () => ({ HttpService: class HttpService {} }));
@@ -59,7 +60,7 @@ describe('SearchForValueListsController.findDatabaseNames', () => {
   });
 
   it('is routed as GET /search-for-value-lists/database-names', () => {
-    const handler = SearchForValueListsController.prototype.findDatabaseNames;
+    const handler = prototypeMethod(SearchForValueListsController.prototype, 'findDatabaseNames');
 
     expect(
       Reflect.getMetadata(PATH_METADATA, SearchForValueListsController),
@@ -71,18 +72,18 @@ describe('SearchForValueListsController.findDatabaseNames', () => {
   });
 
   it('restricts access to the roles allowed to use the ticket forms', () => {
-    const roles = new Reflector().get(
+    const roles = new Reflector().get<Role[]>(
       ROLES_KEY,
-      SearchForValueListsController.prototype.findDatabaseNames,
+      prototypeMethod(SearchForValueListsController.prototype, 'findDatabaseNames'),
     );
 
     expect(roles).toEqual([Role.ADMIN, Role.DATABASE, Role.DATABASE_APPROVER]);
   });
 
   it('never allows COMMON_USER', () => {
-    const roles = new Reflector().get(
+    const roles = new Reflector().get<Role[]>(
       ROLES_KEY,
-      SearchForValueListsController.prototype.findDatabaseNames,
+      prototypeMethod(SearchForValueListsController.prototype, 'findDatabaseNames'),
     );
 
     expect(roles).not.toContain(Role.COMMON_USER);

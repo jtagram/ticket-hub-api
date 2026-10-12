@@ -15,6 +15,7 @@ import { ROLES_KEY } from '../../../../common/guards/roles.decorator';
 import { Role } from '../../../../common/roles/role.enum';
 import { UpdateTicketController } from '../../update-ticket.controller';
 import { UpdateTicketService } from '../../update-ticket.service';
+import { prototypeMethod } from '../../../../../test/helpers/prototype-method';
 
 // @nestjs/typeorm is ESM-only and Jest runs as CommonJS. The code under test is
 // built by hand below, so the injection decorator can be a no-op.
@@ -94,7 +95,7 @@ describe('UpdateTicketController.rejectKubectlCommandTicket', () => {
   });
 
   it('is routed as PATCH /tickets/kubernetes/kubectl/:number/reject', () => {
-    const handler = UpdateTicketController.prototype.rejectKubectlCommandTicket;
+    const handler = prototypeMethod(UpdateTicketController.prototype, 'rejectKubectlCommandTicket');
 
     expect(Reflect.getMetadata(PATH_METADATA, UpdateTicketController)).toBe(
       'tickets',
@@ -121,9 +122,9 @@ describe('UpdateTicketController.rejectKubectlCommandTicket', () => {
   });
 
   it('is restricted to the roles ADMIN, KUBERNATES_APPROVER', () => {
-    const roles = new Reflector().get(
+    const roles = new Reflector().get<Role[]>(
       ROLES_KEY,
-      UpdateTicketController.prototype.rejectKubectlCommandTicket,
+      prototypeMethod(UpdateTicketController.prototype, 'rejectKubectlCommandTicket'),
     );
 
     expect(roles).toEqual([Role.ADMIN, Role.KUBERNATES_APPROVER]);

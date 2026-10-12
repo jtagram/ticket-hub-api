@@ -22,6 +22,8 @@ import {
   authorizationHeaderForClaims,
 } from '../helpers/test-auth';
 import { createTicketTestApp, TicketTestApp } from '../helpers/ticket-test-app';
+import { httpServerOf } from '../helpers/http-server';
+import { bodyOf, ErrorBody } from '../helpers/response-types';
 
 const ENDPOINT = '/search-for-value-lists/database-names';
 const USER_EMAIL = 'user@example.com';
@@ -61,7 +63,7 @@ describe('GET /search-for-value-lists/database-names (e2e)', () => {
     },
     authorization: string | null = auth,
   ) {
-    const req = request(testApp.app.getHttpServer()).get(ENDPOINT).query(query);
+    const req = request(httpServerOf(testApp.app)).get(ENDPOINT).query(query);
     if (authorization) {
       req.set('Authorization', authorization);
     }
@@ -133,9 +135,9 @@ describe('GET /search-for-value-lists/database-names (e2e)', () => {
     it('returns 400 when the namespace is missing', async () => {
       const response = await call({ deployment: 'postgres-main' }).expect(400);
 
-      expect(response.body.statusCode).toBe(400);
-      expect(response.body.error).toBe('Bad Request');
-      expect(response.body.message).toEqual(
+      expect(bodyOf<ErrorBody>(response).statusCode).toBe(400);
+      expect(bodyOf<ErrorBody>(response).error).toBe('Bad Request');
+      expect(bodyOf<ErrorBody>(response).message).toEqual(
         expect.arrayContaining([
           'namespace must be a string',
           'namespace should not be empty',
@@ -146,7 +148,7 @@ describe('GET /search-for-value-lists/database-names (e2e)', () => {
     it('returns 400 when the deployment is missing', async () => {
       const response = await call({ namespace: 'prod' }).expect(400);
 
-      expect(response.body.message).toEqual(
+      expect(bodyOf<ErrorBody>(response).message).toEqual(
         expect.arrayContaining([
           'deployment must be a string',
           'deployment should not be empty',
@@ -157,7 +159,7 @@ describe('GET /search-for-value-lists/database-names (e2e)', () => {
     it('returns 400 listing both properties when the query string is empty', async () => {
       const response = await call({}).expect(400);
 
-      expect(response.body.message).toEqual(
+      expect(bodyOf<ErrorBody>(response).message).toEqual(
         expect.arrayContaining([
           'namespace should not be empty',
           'deployment should not be empty',
@@ -171,7 +173,7 @@ describe('GET /search-for-value-lists/database-names (e2e)', () => {
         deployment: 'postgres-main',
       }).expect(400);
 
-      expect(response.body.message).toEqual(['namespace should not be empty']);
+      expect(bodyOf<ErrorBody>(response).message).toEqual(['namespace should not be empty']);
     });
 
     it('returns 400 when the deployment is empty', async () => {
@@ -180,7 +182,7 @@ describe('GET /search-for-value-lists/database-names (e2e)', () => {
         deployment: '',
       }).expect(400);
 
-      expect(response.body.message).toEqual(['deployment should not be empty']);
+      expect(bodyOf<ErrorBody>(response).message).toEqual(['deployment should not be empty']);
     });
 
     it('returns 400 when the namespace exceeds 63 characters', async () => {
@@ -189,7 +191,7 @@ describe('GET /search-for-value-lists/database-names (e2e)', () => {
         deployment: 'postgres-main',
       }).expect(400);
 
-      expect(response.body.message).toEqual([
+      expect(bodyOf<ErrorBody>(response).message).toEqual([
         'namespace must be shorter than or equal to 63 characters',
       ]);
     });
@@ -200,7 +202,7 @@ describe('GET /search-for-value-lists/database-names (e2e)', () => {
         deployment: 'b'.repeat(64),
       }).expect(400);
 
-      expect(response.body.message).toEqual([
+      expect(bodyOf<ErrorBody>(response).message).toEqual([
         'deployment must be shorter than or equal to 63 characters',
       ]);
     });
@@ -212,7 +214,7 @@ describe('GET /search-for-value-lists/database-names (e2e)', () => {
         unexpected: 'value',
       }).expect(400);
 
-      expect(response.body.message).toEqual([
+      expect(bodyOf<ErrorBody>(response).message).toEqual([
         'property unexpected should not exist',
       ]);
     });
@@ -261,7 +263,7 @@ describe('GET /search-for-value-lists/database-names (e2e)', () => {
     it('returns 401 when the request has no bearer token', async () => {
       const response = await call(query, null).expect(401);
 
-      expect(response.body.message).toBe('Missing or malformed bearer token');
+      expect(bodyOf<ErrorBody>(response).message).toBe('Missing or malformed bearer token');
       expect(infraHub.listDatabases).not.toHaveBeenCalled();
     });
 
@@ -271,7 +273,7 @@ describe('GET /search-for-value-lists/database-names (e2e)', () => {
         'Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6Im90aGVyIn0.e30.invalid',
       ).expect(401);
 
-      expect(response.body.message).toBe('Invalid or expired token');
+      expect(bodyOf<ErrorBody>(response).message).toBe('Invalid or expired token');
     });
 
     it('returns 403 when the user only has the COMMON_USER role', async () => {
@@ -283,7 +285,7 @@ describe('GET /search-for-value-lists/database-names (e2e)', () => {
         }),
       ).expect(403);
 
-      expect(response.body.message).toBe('You do not have the required role');
+      expect(bodyOf<ErrorBody>(response).message).toBe('You do not have the required role');
       expect(infraHub.listDatabases).not.toHaveBeenCalled();
     });
 
@@ -297,7 +299,7 @@ describe('GET /search-for-value-lists/database-names (e2e)', () => {
         }),
       ).expect(403);
 
-      expect(response.body.message).toBe(
+      expect(bodyOf<ErrorBody>(response).message).toBe(
         'This token was not issued for the ticket-hub-api application',
       );
       expect(infraHub.listDatabases).not.toHaveBeenCalled();
@@ -309,7 +311,7 @@ describe('GET /search-for-value-lists/database-names (e2e)', () => {
         authorizationHeaderForClaims({ email: 'user@example.com' }),
       ).expect(403);
 
-      expect(response.body.message).toBe(
+      expect(bodyOf<ErrorBody>(response).message).toBe(
         'The token does not carry application information',
       );
       expect(infraHub.listDatabases).not.toHaveBeenCalled();
@@ -351,7 +353,7 @@ describe('GET /search-for-value-lists/database-names (e2e)', () => {
         authorizationHeaderFor({ email: USER_EMAIL, roles: [Role.SERVER] }),
       ).expect(403);
 
-      expect(response.body.message).toBe('You do not have the required role');
+      expect(bodyOf<ErrorBody>(response).message).toBe('You do not have the required role');
       expect(infraHub.listDatabases).not.toHaveBeenCalled();
     });
 
@@ -364,7 +366,7 @@ describe('GET /search-for-value-lists/database-names (e2e)', () => {
         }),
       ).expect(403);
 
-      expect(response.body.message).toBe('You do not have the required role');
+      expect(bodyOf<ErrorBody>(response).message).toBe('You do not have the required role');
       expect(infraHub.listDatabases).not.toHaveBeenCalled();
     });
   });

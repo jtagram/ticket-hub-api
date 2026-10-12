@@ -26,6 +26,8 @@ import {
   seedDatabaseManagementTicket,
 } from '../helpers/ticket-fixtures';
 import { createTicketTestApp, TicketTestApp } from '../helpers/ticket-test-app';
+import { httpServerOf } from '../helpers/http-server';
+import { bodyOf, ErrorBody } from '../helpers/response-types';
 
 const ENDPOINT = '/tickets/kubernetes/kubectl';
 const USER_EMAIL = 'approver@example.com';
@@ -55,7 +57,7 @@ describe('PATCH /tickets/kubernetes/kubectl/:number/reject (e2e)', () => {
   });
 
   function call(number: number | string, authorization: string | null = auth) {
-    const req = request(testApp.app.getHttpServer()).patch(
+    const req = request(httpServerOf(testApp.app)).patch(
       ENDPOINT + '/' + number + '/reject',
     );
     if (authorization) {
@@ -146,7 +148,7 @@ describe('PATCH /tickets/kubernetes/kubectl/:number/reject (e2e)', () => {
 
       const response = await call(ticket.number).expect(200);
 
-      expect(response.body.response).toBe('previous note');
+      expect(bodyOf<KubectlCommandTicketEntity>(response).response).toBe('previous note');
       const row = await findRow(ticket.id);
       expect(row.response).toBe('previous note');
     });
@@ -157,7 +159,7 @@ describe('PATCH /tickets/kubernetes/kubectl/:number/reject (e2e)', () => {
       await call(ticket.number).expect(200);
       const response = await call(ticket.number).expect(409);
 
-      expect(response.body.message).toBe(
+      expect(bodyOf<ErrorBody>(response).message).toBe(
         'Ticket with number ' +
           ticket.number +
           ' is already REJECTED, it cannot be rejected',
@@ -240,7 +242,7 @@ describe('PATCH /tickets/kubernetes/kubectl/:number/reject (e2e)', () => {
 
       const response = await call(ticket.number).expect(409);
 
-      expect(response.body.message).toBe(
+      expect(bodyOf<ErrorBody>(response).message).toBe(
         'Ticket with number ' +
           ticket.number +
           ' is already REJECTED, it cannot be rejected',
@@ -277,7 +279,7 @@ describe('PATCH /tickets/kubernetes/kubectl/:number/reject (e2e)', () => {
       const ticket = await seedKubectlCommandTicket(testApp.dataSource);
       const response = await call(ticket.number, null).expect(401);
 
-      expect(response.body.message).toBe('Missing or malformed bearer token');
+      expect(bodyOf<ErrorBody>(response).message).toBe('Missing or malformed bearer token');
     });
 
     it('returns 401 when the token is signed with an unknown key', async () => {
@@ -287,7 +289,7 @@ describe('PATCH /tickets/kubernetes/kubectl/:number/reject (e2e)', () => {
         'Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6Im90aGVyIn0.e30.invalid',
       ).expect(401);
 
-      expect(response.body.message).toBe('Invalid or expired token');
+      expect(bodyOf<ErrorBody>(response).message).toBe('Invalid or expired token');
     });
 
     it('returns 403 when the user only has the COMMON_USER role', async () => {
@@ -300,7 +302,7 @@ describe('PATCH /tickets/kubernetes/kubectl/:number/reject (e2e)', () => {
         }),
       ).expect(403);
 
-      expect(response.body.message).toBe('You do not have the required role');
+      expect(bodyOf<ErrorBody>(response).message).toBe('You do not have the required role');
     });
 
     it('returns 403 when the user only has roles of another domain', async () => {
@@ -325,7 +327,7 @@ describe('PATCH /tickets/kubernetes/kubectl/:number/reject (e2e)', () => {
         }),
       ).expect(403);
 
-      expect(response.body.message).toBe(
+      expect(bodyOf<ErrorBody>(response).message).toBe(
         'This token was not issued for the ticket-hub-api application',
       );
     });
@@ -337,7 +339,7 @@ describe('PATCH /tickets/kubernetes/kubectl/:number/reject (e2e)', () => {
         authorizationHeaderForClaims({ email: 'user@example.com' }),
       ).expect(403);
 
-      expect(response.body.message).toBe(
+      expect(bodyOf<ErrorBody>(response).message).toBe(
         'The token does not carry application information',
       );
     });
@@ -352,7 +354,7 @@ describe('PATCH /tickets/kubernetes/kubectl/:number/reject (e2e)', () => {
         }),
       ).expect(403);
 
-      expect(response.body.message).toBe('You do not have the required role');
+      expect(bodyOf<ErrorBody>(response).message).toBe('You do not have the required role');
     });
 
     it('does not touch the ticket nor infra-hub-api when the user is forbidden', async () => {

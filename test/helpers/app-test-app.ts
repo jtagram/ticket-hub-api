@@ -83,15 +83,24 @@ export async function createAppTestApp(): Promise<AppTestApp> {
   const jwk = createPublicKey(publicKeyPem).export({ format: 'jwk' });
   const fetchSpy = jest
     .spyOn(globalThis, 'fetch')
-    .mockImplementation(async (input) => {
-      const url = typeof input === 'string' ? input : String(input);
+    .mockImplementation((input) => {
+      const url =
+        typeof input === 'string'
+          ? input
+          : input instanceof URL
+            ? input.href
+            : input.url;
       if (url === `${IAM_API_URL}/.well-known/jwks.json`) {
-        return new Response(
-          JSON.stringify({ keys: [{ ...jwk, kid: TEST_KEY_ID }] }),
-          { status: 200, headers: { 'content-type': 'application/json' } },
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({ keys: [{ ...jwk, kid: TEST_KEY_ID }] }),
+            { status: 200, headers: { 'content-type': 'application/json' } },
+          ),
         );
       }
-      throw new Error(`Unexpected outbound HTTP call in e2e: ${url}`);
+      return Promise.reject(
+        new Error(`Unexpected outbound HTTP call in e2e: ${url}`),
+      );
     });
 
   const dataSource = await createInMemoryDataSource(ENTITIES);

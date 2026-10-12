@@ -60,7 +60,7 @@ describe('CreateTicketService.createDatabaseProvisioningTicket', () => {
   it('maps the dto to an OPEN entity and passes it to the matching repository', async () => {
     target.create.mockResolvedValue({ id: 1, number: 10 });
 
-    await service.createDatabaseProvisioningTicket(dto as never);
+    await service.createDatabaseProvisioningTicket(dto);
 
     expect(target.create).toHaveBeenCalledTimes(1);
     expect(target.create.mock.calls[0][0]).toMatchObject({
@@ -73,7 +73,7 @@ describe('CreateTicketService.createDatabaseProvisioningTicket', () => {
   it('does not use any other repository', async () => {
     target.create.mockResolvedValue({});
 
-    await service.createDatabaseProvisioningTicket(dto as never);
+    await service.createDatabaseProvisioningTicket(dto);
 
     others.forEach((mock) => expect(mock.create).not.toHaveBeenCalled());
   });
@@ -83,7 +83,7 @@ describe('CreateTicketService.createDatabaseProvisioningTicket', () => {
     target.create.mockResolvedValue(saved);
 
     await expect(
-      service.createDatabaseProvisioningTicket(dto as never),
+      service.createDatabaseProvisioningTicket(dto),
     ).resolves.toBe(saved);
   });
 
@@ -92,7 +92,7 @@ describe('CreateTicketService.createDatabaseProvisioningTicket', () => {
       service.createDatabaseProvisioningTicket({
         ...dto,
         newDbName: '   ',
-      } as never),
+      }),
     ).rejects.toThrow('missing required field "newDbName"');
 
     expect(target.create).not.toHaveBeenCalled();
@@ -103,7 +103,7 @@ describe('CreateTicketService.createDatabaseProvisioningTicket', () => {
     target.create.mockRejectedValue(failure);
 
     await expect(
-      service.createDatabaseProvisioningTicket(dto as never),
+      service.createDatabaseProvisioningTicket(dto),
     ).rejects.toBe(failure);
   });
 });

@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { NotFoundException } from '@nestjs/common';
 import { SearchTicketService } from '../../search-ticket.service';
 
 // @nestjs/typeorm is ESM-only and Jest runs as CommonJS. The code under test is

@@ -1,15 +1,12 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { NotFoundException, ParseIntPipe, RequestMethod } from '@nestjs/common';
-import {
-  METHOD_METADATA,
-  PATH_METADATA,
-  ROUTE_ARGS_METADATA,
-} from '@nestjs/common/constants';
+import { RequestMethod } from '@nestjs/common';
+import { METHOD_METADATA, PATH_METADATA } from '@nestjs/common/constants';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../../../../common/guards/roles.decorator';
 import { Role } from '../../../../common/roles/role.enum';
 import { SearchTicketController } from '../../search-ticket.controller';
 import { SearchTicketService } from '../../search-ticket.service';
+import { prototypeMethod } from '../../../../../test/helpers/prototype-method';
 
 // @nestjs/typeorm is ESM-only and Jest runs as CommonJS. The code under test is
 // built by hand below, so the injection decorator can be a no-op.
@@ -78,7 +75,7 @@ describe('SearchTicketController.findAllDatabaseManagementTickets', () => {
 
   it('is routed as GET /tickets/database/management', () => {
     const handler =
-      SearchTicketController.prototype.findAllDatabaseManagementTickets;
+      prototypeMethod(SearchTicketController.prototype, 'findAllDatabaseManagementTickets');
 
     expect(Reflect.getMetadata(PATH_METADATA, SearchTicketController)).toBe(
       'tickets',
@@ -92,9 +89,9 @@ describe('SearchTicketController.findAllDatabaseManagementTickets', () => {
   });
 
   it('is restricted to the roles ADMIN, DATABASE, DATABASE_APPROVER', () => {
-    const roles = new Reflector().get(
+    const roles = new Reflector().get<Role[]>(
       ROLES_KEY,
-      SearchTicketController.prototype.findAllDatabaseManagementTickets,
+      prototypeMethod(SearchTicketController.prototype, 'findAllDatabaseManagementTickets'),
     );
 
     expect(roles).toEqual([Role.ADMIN, Role.DATABASE, Role.DATABASE_APPROVER]);

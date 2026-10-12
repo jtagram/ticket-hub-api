@@ -19,6 +19,9 @@ import {
   seedKubernetesManifestTicket,
 } from '../helpers/ticket-fixtures';
 import { createTicketTestApp, TicketTestApp } from '../helpers/ticket-test-app';
+import { httpServerOf } from '../helpers/http-server';
+import { ServerManagementTicketEntity } from '../../src/common/database/server-management-ticket/server-management-ticket.entity';
+import { bodyOf, ErrorBody } from '../helpers/response-types';
 
 const ENDPOINT = '/tickets/server/management';
 const USER_EMAIL = 'user@example.com';
@@ -43,7 +46,7 @@ describe('GET /tickets/server/management/:number (e2e)', () => {
   });
 
   function call(number: number | string, authorization: string | null = auth) {
-    const req = request(testApp.app.getHttpServer()).get(
+    const req = request(httpServerOf(testApp.app)).get(
       ENDPOINT + '/' + number,
     );
     if (authorization) {
@@ -66,9 +69,9 @@ describe('GET /tickets/server/management/:number (e2e)', () => {
 
       const response = await call(second.number).expect(200);
 
-      expect(response.body.id).toBe(second.id);
-      expect(response.body.number).toBe(second.number);
-      expect(response.body.subject).toBe('Second');
+      expect(bodyOf<ServerManagementTicketEntity>(response).id).toBe(second.id);
+      expect(bodyOf<ServerManagementTicketEntity>(response).number).toBe(second.number);
+      expect(bodyOf<ServerManagementTicketEntity>(response).subject).toBe('Second');
     });
 
     it('returns an IN_PROGRESS ticket like any other', async () => {
@@ -78,7 +81,7 @@ describe('GET /tickets/server/management/:number (e2e)', () => {
 
       const response = await call(ticket.number).expect(200);
 
-      expect(response.body.status).toBe(TicketStatus.IN_PROGRESS);
+      expect(bodyOf<ServerManagementTicketEntity>(response).status).toBe(TicketStatus.IN_PROGRESS);
     });
 
     it('returns every column of the persisted ticket', async () => {
@@ -102,8 +105,8 @@ describe('GET /tickets/server/management/:number (e2e)', () => {
           codeAnsible: second.codeAnsible,
         }),
       );
-      expect(typeof response.body.createdAt).toBe('string');
-      expect(typeof response.body.updatedAt).toBe('string');
+      expect(typeof bodyOf<ServerManagementTicketEntity>(response).createdAt).toBe('string');
+      expect(typeof bodyOf<ServerManagementTicketEntity>(response).updatedAt).toBe('string');
     });
 
     it('returns the ticket in whatever status it has', async () => {
@@ -114,8 +117,8 @@ describe('GET /tickets/server/management/:number (e2e)', () => {
 
       const response = await call(approved.number).expect(200);
 
-      expect(response.body.status).toBe(TicketStatus.APPROVED);
-      expect(response.body.response).toBe('{"success":true}');
+      expect(bodyOf<ServerManagementTicketEntity>(response).status).toBe(TicketStatus.APPROVED);
+      expect(bodyOf<ServerManagementTicketEntity>(response).response).toBe('{"success":true}');
     });
 
     it('returns 404 with the not-found message when the number does not exist', async () => {
@@ -131,7 +134,7 @@ describe('GET /tickets/server/management/:number (e2e)', () => {
     it('returns 404 for a negative number', async () => {
       const response = await call(-1).expect(404);
 
-      expect(response.body.message).toBe(
+      expect(bodyOf<ErrorBody>(response).message).toBe(
         'Server management ticket with number -1 not found',
       );
     });
@@ -166,7 +169,7 @@ describe('GET /tickets/server/management/:number (e2e)', () => {
     it('returns 400 when the number is a decimal', async () => {
       const response = await call('1.5').expect(400);
 
-      expect(response.body.message).toBe(
+      expect(bodyOf<ErrorBody>(response).message).toBe(
         'Validation failed (numeric string is expected)',
       );
     });
@@ -177,7 +180,7 @@ describe('GET /tickets/server/management/:number (e2e)', () => {
       const ticket = await seedServerManagementTicket(testApp.dataSource);
       const response = await call(ticket.number, null).expect(401);
 
-      expect(response.body.message).toBe('Missing or malformed bearer token');
+      expect(bodyOf<ErrorBody>(response).message).toBe('Missing or malformed bearer token');
     });
 
     it('returns 401 when the token is signed with an unknown key', async () => {
@@ -187,7 +190,7 @@ describe('GET /tickets/server/management/:number (e2e)', () => {
         'Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6Im90aGVyIn0.e30.invalid',
       ).expect(401);
 
-      expect(response.body.message).toBe('Invalid or expired token');
+      expect(bodyOf<ErrorBody>(response).message).toBe('Invalid or expired token');
     });
 
     it('returns 403 when the user only has the COMMON_USER role', async () => {
@@ -200,7 +203,7 @@ describe('GET /tickets/server/management/:number (e2e)', () => {
         }),
       ).expect(403);
 
-      expect(response.body.message).toBe('You do not have the required role');
+      expect(bodyOf<ErrorBody>(response).message).toBe('You do not have the required role');
     });
 
     it('returns 403 when the user only has roles of another domain', async () => {
@@ -225,7 +228,7 @@ describe('GET /tickets/server/management/:number (e2e)', () => {
         }),
       ).expect(403);
 
-      expect(response.body.message).toBe(
+      expect(bodyOf<ErrorBody>(response).message).toBe(
         'This token was not issued for the ticket-hub-api application',
       );
     });
@@ -237,7 +240,7 @@ describe('GET /tickets/server/management/:number (e2e)', () => {
         authorizationHeaderForClaims({ email: 'user@example.com' }),
       ).expect(403);
 
-      expect(response.body.message).toBe(
+      expect(bodyOf<ErrorBody>(response).message).toBe(
         'The token does not carry application information',
       );
     });

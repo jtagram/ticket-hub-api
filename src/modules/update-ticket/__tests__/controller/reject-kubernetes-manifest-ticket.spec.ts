@@ -15,6 +15,7 @@ import { ROLES_KEY } from '../../../../common/guards/roles.decorator';
 import { Role } from '../../../../common/roles/role.enum';
 import { UpdateTicketController } from '../../update-ticket.controller';
 import { UpdateTicketService } from '../../update-ticket.service';
+import { prototypeMethod } from '../../../../../test/helpers/prototype-method';
 
 // @nestjs/typeorm is ESM-only and Jest runs as CommonJS. The code under test is
 // built by hand below, so the injection decorator can be a no-op.
@@ -95,7 +96,7 @@ describe('UpdateTicketController.rejectKubernetesManifestTicket', () => {
 
   it('is routed as PATCH /tickets/kubernetes/manifest/:number/reject', () => {
     const handler =
-      UpdateTicketController.prototype.rejectKubernetesManifestTicket;
+      prototypeMethod(UpdateTicketController.prototype, 'rejectKubernetesManifestTicket');
 
     expect(Reflect.getMetadata(PATH_METADATA, UpdateTicketController)).toBe(
       'tickets',
@@ -122,9 +123,9 @@ describe('UpdateTicketController.rejectKubernetesManifestTicket', () => {
   });
 
   it('is restricted to the roles ADMIN, KUBERNATES_APPROVER', () => {
-    const roles = new Reflector().get(
+    const roles = new Reflector().get<Role[]>(
       ROLES_KEY,
-      UpdateTicketController.prototype.rejectKubernetesManifestTicket,
+      prototypeMethod(UpdateTicketController.prototype, 'rejectKubernetesManifestTicket'),
     );
 
     expect(roles).toEqual([Role.ADMIN, Role.KUBERNATES_APPROVER]);

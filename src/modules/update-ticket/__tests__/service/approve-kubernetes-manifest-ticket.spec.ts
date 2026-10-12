@@ -255,13 +255,13 @@ describe('UpdateTicketService.approveKubernetesManifestTicket', () => {
   it('updates the ticket only after infra-hub-api answered', async () => {
     const order: string[] = [];
     target.findByNumber.mockResolvedValue(buildTicket());
-    infra.manageKubernetesManifest.mockImplementation(async () => {
+    infra.manageKubernetesManifest.mockImplementation(() => {
       order.push('infra');
-      return { executionResult, logId: 'log-1' };
+      return Promise.resolve({ executionResult, logId: 'log-1' });
     });
-    target.update.mockImplementation(async () => {
+    target.update.mockImplementation(() => {
       order.push('update');
-      return {};
+      return Promise.resolve({});
     });
 
     await service.approveKubernetesManifestTicket(42);
@@ -457,13 +457,13 @@ describe('UpdateTicketService.approveKubernetesManifestTicket', () => {
     it('claims the ticket before calling infra-hub-api', async () => {
       const order: string[] = [];
       target.findByNumber.mockResolvedValue(buildTicket());
-      target.claimForApproval.mockImplementation(async () => {
+      target.claimForApproval.mockImplementation(() => {
         order.push('claim');
-        return true;
+        return Promise.resolve(true);
       });
-      infra.manageKubernetesManifest.mockImplementation(async () => {
+      infra.manageKubernetesManifest.mockImplementation(() => {
         order.push('infra');
-        return { executionResult, logId: 'log-1' };
+        return Promise.resolve({ executionResult, logId: 'log-1' });
       });
       target.update.mockResolvedValue({});
 
