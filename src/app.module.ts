@@ -12,6 +12,7 @@ import { RolesGuard } from './common/guards/roles.guard';
 import { JwtPublicKeyModule } from './common/jwt/jwt-public-key.module';
 import { AppUserAuthModule } from './common/iam-api-auth/app-user-auth.module';
 import { LoggerModule } from './instrument/logger/logger.module';
+import { HealthModule } from './modules/health/health.module';
 import { InfraHubApiModule } from './modules/infra-hub-api/infra-hub-api.module';
 import { IamApiModule } from './modules/iam-api/iam-api.module';
 import { SearchForValueListsModule } from './modules/search-for-value-lists/search-for-value-lists.module';
@@ -31,6 +32,7 @@ const jwtModule = JwtModule.register({});
     jwtModule,
     JwtPublicKeyModule,
     AppUserAuthModule,
+    HealthModule,
     InfraHubApiModule,
     IamApiModule,
     SearchForValueListsModule,
