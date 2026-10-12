@@ -9,11 +9,21 @@ import { CreateDatabaseProvisioningTicketDto } from './dto/create-database-provi
 import { CreateServerManagementTicketDto } from './dto/create-server-management-ticket.dto';
 import { CreateKubernetesManifestTicketDto } from './dto/create-kubernetes-manifest-ticket.dto';
 import { CreateKubectlCommandTicketDto } from './dto/create-kubectl-command-ticket.dto';
+import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiCreateDatabaseManagementTicket,
+  ApiCreateDatabaseProvisioningTicket,
+  ApiCreateServerManagementTicket,
+  ApiCreateKubernetesManifestTicket,
+  ApiCreateKubectlCommandTicket,
+} from './swagger/create-ticket.swagger';
 
 @Controller('tickets')
+@ApiTags('Create ticket')
 export class CreateTicketController {
   constructor(private readonly createTicketService: CreateTicketService) {}
 
+  @ApiCreateDatabaseManagementTicket()
   @Post('database/management')
   @HttpCode(HttpStatus.CREATED)
   @Roles(Role.ADMIN, Role.DATABASE, Role.DATABASE_APPROVER)
@@ -27,6 +37,7 @@ export class CreateTicketController {
     return this.createTicketService.createDatabaseManagementTicket(dto);
   }
 
+  @ApiCreateDatabaseProvisioningTicket()
   @Post('database/provisioning')
   @HttpCode(HttpStatus.CREATED)
   @Roles(Role.ADMIN, Role.DATABASE, Role.DATABASE_APPROVER)
@@ -40,6 +51,7 @@ export class CreateTicketController {
     return this.createTicketService.createDatabaseProvisioningTicket(dto);
   }
 
+  @ApiCreateServerManagementTicket()
   @Post('server/management')
   @HttpCode(HttpStatus.CREATED)
   @Roles(Role.ADMIN, Role.SERVER, Role.SERVER_APPROVER)
@@ -53,6 +65,7 @@ export class CreateTicketController {
     return this.createTicketService.createServerManagementTicket(dto);
   }
 
+  @ApiCreateKubernetesManifestTicket()
   @Post('kubernetes/manifest')
   @HttpCode(HttpStatus.CREATED)
   @Roles(Role.ADMIN, Role.KUBERNATES, Role.KUBERNATES_APPROVER)
@@ -66,6 +79,7 @@ export class CreateTicketController {
     return this.createTicketService.createKubernetesManifestTicket(dto);
   }
 
+  @ApiCreateKubectlCommandTicket()
   @Post('kubernetes/kubectl')
   @HttpCode(HttpStatus.CREATED)
   @Roles(Role.ADMIN, Role.KUBERNATES, Role.KUBERNATES_APPROVER)
