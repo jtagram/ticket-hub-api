@@ -68,7 +68,7 @@ describe('AppUserAuthService.getAccessToken', () => {
       {
         headers: {
           'Content-Type': 'application/json',
-          'x-application-name': 'ticket-hub',
+          'x-origin-application': 'ticket-hub',
           'x-target-application': 'infra-hub',
         },
       },

@@ -120,7 +120,7 @@ export class AppUserAuthService {
         {
           headers: {
             'Content-Type': 'application/json',
-            'x-application-name': this.originApplicationName,
+            'x-origin-application': this.originApplicationName,
             'x-target-application': targetApplicationName,
           },
         },

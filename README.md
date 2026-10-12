@@ -60,7 +60,7 @@ de cada token.
 Nombre exacto (columna `name`) de la aplicación "ticket-hub-api" tal como está
 registrada en la base de datos de `iam-api` (tabla `apps_applications`).
 Lo usa `RolesGuard` para verificar que el token recibido fue emitido para
-esta aplicación, y se envía como `x-application-name` (origen) cuando este
+esta aplicación, y se envía como `x-origin-application` (origen) cuando este
 servicio hace login contra `iam-api`.
 
 ### `IAM_API_APPLICATION_NAME`
@@ -73,7 +73,7 @@ Nombre exacto de la aplicación "iam-api" en `iam-api`. Es el destino
 
 Nombre exacto de la aplicación "infra-hub-api" en `iam-api`; tiene que
 coincidir con el mismo valor configurado como `INFRA_HUB_API_APPLICATION_NAME`
-en `infra-hub-api`. `ticket-hub-api` lo manda como header `x-application-name`
+en `infra-hub-api`. `ticket-hub-api` lo manda como header `x-origin-application`
 al loguearse contra `iam-api` (`POST /apps-users/login`).
 
 ### `TICKET_HUB_API_SERVICE_CLIENT_ID` / `TICKET_HUB_API_SERVICE_CLIENT_SECRET`
@@ -84,7 +84,7 @@ admin-only) — es el mecanismo real de `iam-api` para credenciales de servicio
 muestra una vez, en el momento de crear el apps-user; guardalo ahí. Es la
 identidad propia de `ticket-hub-api`, que se loguea con estas credenciales
 contra `iam-api` pidiendo distintas aplicaciones según lo que necesite en
-cada caso (header `x-application-name`): `infra-hub-api` para ejecutar
+cada caso (header `x-origin-application`): `infra-hub-api` para ejecutar
 operaciones de infraestructura, o `ticket-hub` para resolver la lista de
 posibles asignados. `AppUserAuthService` cachea un JWT por cada nombre de
 aplicación pedido.
