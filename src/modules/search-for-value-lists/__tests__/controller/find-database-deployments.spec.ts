@@ -17,78 +17,75 @@ type ServiceMethod = jest.Mock<(...args: unknown[]) => Promise<unknown>>;
 const dto = { namespace: 'prod' };
 
 describe('SearchForValueListsController.findDatabaseDeployments', () => {
-  let service: Record<string, ServiceMethod>;
-  let controller: SearchForValueListsController;
+	let service: Record<string, ServiceMethod>;
+	let controller: SearchForValueListsController;
 
-  beforeEach(() => {
-    service = {
-      findAssignees: jest.fn<(...args: unknown[]) => Promise<unknown>>(),
-      findDatabaseDeployments:
-        jest.fn<(...args: unknown[]) => Promise<unknown>>(),
-      findDatabaseNames: jest.fn<(...args: unknown[]) => Promise<unknown>>(),
-    };
-    controller = new SearchForValueListsController(
-      service as unknown as SearchForValueListsService,
-    );
-  });
+	beforeEach(() => {
+		service = {
+			findAssignees: jest.fn<(...args: unknown[]) => Promise<unknown>>(),
+			findDatabaseDeployments: jest.fn<(...args: unknown[]) => Promise<unknown>>(),
+			findDatabaseNames: jest.fn<(...args: unknown[]) => Promise<unknown>>(),
+		};
+		controller = new SearchForValueListsController(
+			service as unknown as SearchForValueListsService,
+		);
+	});
 
-  it('delegates to the matching service method and returns its result', async () => {
-    const items = [{ value: 'a', label: 'a' }];
-    service.findDatabaseDeployments.mockResolvedValue(items);
+	it('delegates to the matching service method and returns its result', async () => {
+		const items = [{ value: 'a', label: 'a' }];
+		service.findDatabaseDeployments.mockResolvedValue(items);
 
-    await expect(controller.findDatabaseDeployments(dto)).resolves.toBe(items);
+		await expect(controller.findDatabaseDeployments(dto)).resolves.toBe(items);
 
-    expect(service.findDatabaseDeployments).toHaveBeenCalledTimes(1);
-    expect(service.findDatabaseDeployments).toHaveBeenCalledWith(dto);
-  });
+		expect(service.findDatabaseDeployments).toHaveBeenCalledTimes(1);
+		expect(service.findDatabaseDeployments).toHaveBeenCalledWith(dto);
+	});
 
-  it('does not call any other service method', async () => {
-    service.findDatabaseDeployments.mockResolvedValue([]);
+	it('does not call any other service method', async () => {
+		service.findDatabaseDeployments.mockResolvedValue([]);
 
-    await controller.findDatabaseDeployments(dto);
+		await controller.findDatabaseDeployments(dto);
 
-    Object.entries(service)
-      .filter(([name]) => name !== 'findDatabaseDeployments')
-      .forEach(([, mock]) => expect(mock).not.toHaveBeenCalled());
-  });
+		Object.entries(service)
+			.filter(([name]) => name !== 'findDatabaseDeployments')
+			.forEach(([, mock]) => expect(mock).not.toHaveBeenCalled());
+	});
 
-  it('propagates a service rejection', async () => {
-    const failure = new Error('boom');
-    service.findDatabaseDeployments.mockRejectedValue(failure);
+	it('propagates a service rejection', async () => {
+		const failure = new Error('boom');
+		service.findDatabaseDeployments.mockRejectedValue(failure);
 
-    await expect(controller.findDatabaseDeployments(dto)).rejects.toBe(failure);
-  });
+		await expect(controller.findDatabaseDeployments(dto)).rejects.toBe(failure);
+	});
 
-  it('is routed as GET /search-for-value-lists/database-deployments', () => {
-    const handler =
-      prototypeMethod(SearchForValueListsController.prototype, 'findDatabaseDeployments');
+	it('is routed as GET /search-for-value-lists/database-deployments', () => {
+		const handler = prototypeMethod(
+			SearchForValueListsController.prototype,
+			'findDatabaseDeployments',
+		);
 
-    expect(
-      Reflect.getMetadata(PATH_METADATA, SearchForValueListsController),
-    ).toBe('search-for-value-lists');
-    expect(Reflect.getMetadata(PATH_METADATA, handler)).toBe(
-      'database-deployments',
-    );
-    expect(Reflect.getMetadata(METHOD_METADATA, handler)).toBe(
-      RequestMethod.GET,
-    );
-  });
+		expect(Reflect.getMetadata(PATH_METADATA, SearchForValueListsController)).toBe(
+			'search-for-value-lists',
+		);
+		expect(Reflect.getMetadata(PATH_METADATA, handler)).toBe('database-deployments');
+		expect(Reflect.getMetadata(METHOD_METADATA, handler)).toBe(RequestMethod.GET);
+	});
 
-  it('restricts access to the roles allowed to use the ticket forms', () => {
-    const roles = new Reflector().get<Role[]>(
-      ROLES_KEY,
-      prototypeMethod(SearchForValueListsController.prototype, 'findDatabaseDeployments'),
-    );
+	it('restricts access to the roles allowed to use the ticket forms', () => {
+		const roles = new Reflector().get<Role[]>(
+			ROLES_KEY,
+			prototypeMethod(SearchForValueListsController.prototype, 'findDatabaseDeployments'),
+		);
 
-    expect(roles).toEqual([Role.ADMIN, Role.DATABASE, Role.DATABASE_APPROVER]);
-  });
+		expect(roles).toEqual([Role.ADMIN, Role.DATABASE, Role.DATABASE_APPROVER]);
+	});
 
-  it('never allows COMMON_USER', () => {
-    const roles = new Reflector().get<Role[]>(
-      ROLES_KEY,
-      prototypeMethod(SearchForValueListsController.prototype, 'findDatabaseDeployments'),
-    );
+	it('never allows COMMON_USER', () => {
+		const roles = new Reflector().get<Role[]>(
+			ROLES_KEY,
+			prototypeMethod(SearchForValueListsController.prototype, 'findDatabaseDeployments'),
+		);
 
-    expect(roles).not.toContain(Role.COMMON_USER);
-  });
+		expect(roles).not.toContain(Role.COMMON_USER);
+	});
 });

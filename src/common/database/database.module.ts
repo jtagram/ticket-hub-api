@@ -13,40 +13,40 @@ import { KubectlCommandTicketEntity } from './kubectl-command-ticket/kubectl-com
 import { KubectlCommandTicketsRepository } from './kubectl-command-ticket/kubectl-command-tickets.repository';
 
 const entities = [
-  ServerManagementTicketEntity,
-  DatabaseManagementTicketEntity,
-  DatabaseProvisioningTicketEntity,
-  KubernetesManifestTicketEntity,
-  KubectlCommandTicketEntity,
+	ServerManagementTicketEntity,
+	DatabaseManagementTicketEntity,
+	DatabaseProvisioningTicketEntity,
+	KubernetesManifestTicketEntity,
+	KubectlCommandTicketEntity,
 ];
 
 const repositories = [
-  ServerManagementTicketsRepository,
-  DatabaseManagementTicketsRepository,
-  DatabaseProvisioningTicketsRepository,
-  KubernetesManifestTicketsRepository,
-  KubectlCommandTicketsRepository,
+	ServerManagementTicketsRepository,
+	DatabaseManagementTicketsRepository,
+	DatabaseProvisioningTicketsRepository,
+	KubernetesManifestTicketsRepository,
+	KubectlCommandTicketsRepository,
 ];
 
 @Global()
 @Module({
-  imports: [
-    TypeOrmModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get<string>('DATABASE_HOST'),
-        port: Number(configService.get<string>('DATABASE_PORT')),
-        username: configService.get<string>('POSTGRES_USER'),
-        password: configService.get<string>('POSTGRES_PASSWORD'),
-        database: configService.get<string>('DATABASE_NAME'),
-        entities,
-        synchronize: false,
-      }),
-    }),
-    TypeOrmModule.forFeature(entities),
-  ],
-  providers: repositories,
-  exports: repositories,
+	imports: [
+		TypeOrmModule.forRootAsync({
+			inject: [ConfigService],
+			useFactory: (configService: ConfigService) => ({
+				type: 'postgres',
+				host: configService.get<string>('DATABASE_HOST'),
+				port: Number(configService.get<string>('DATABASE_PORT')),
+				username: configService.get<string>('POSTGRES_USER'),
+				password: configService.get<string>('POSTGRES_PASSWORD'),
+				database: configService.get<string>('DATABASE_NAME'),
+				entities,
+				synchronize: false,
+			}),
+		}),
+		TypeOrmModule.forFeature(entities),
+	],
+	providers: repositories,
+	exports: repositories,
 })
 export class DatabaseModule {}

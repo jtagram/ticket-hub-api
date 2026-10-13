@@ -1,24 +1,11 @@
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-} from '@jest/globals';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from '@jest/globals';
 import request from 'supertest';
 import { KubectlCommandTicketEntity } from '../../src/common/database/kubectl-command-ticket/kubectl-command-ticket.entity';
 import { TicketStatus } from '../../src/common/database/ticket-status.enum';
 import { Role } from '../../src/common/roles/role.enum';
 import { SearchTicketModule } from '../../src/modules/search-ticket/search-ticket.module';
-import {
-  authorizationHeaderFor,
-  authorizationHeaderForClaims,
-} from '../helpers/test-auth';
-import {
-  seedKubectlCommandTicket,
-  seedDatabaseManagementTicket,
-} from '../helpers/ticket-fixtures';
+import { authorizationHeaderFor, authorizationHeaderForClaims } from '../helpers/test-auth';
+import { seedKubectlCommandTicket, seedDatabaseManagementTicket } from '../helpers/ticket-fixtures';
 import { createTicketTestApp, TicketTestApp } from '../helpers/ticket-test-app';
 import { httpServerOf } from '../helpers/http-server';
 import { bodyOf, ErrorBody } from '../helpers/response-types';
@@ -27,224 +14,226 @@ const ENDPOINT = '/tickets/kubernetes/kubectl';
 const USER_EMAIL = 'user@example.com';
 
 describe('GET /tickets/kubernetes/kubectl (e2e)', () => {
-  let testApp: TicketTestApp;
-  const auth = authorizationHeaderFor({
-    email: USER_EMAIL,
-    roles: [Role.KUBERNATES],
-  });
+	let testApp: TicketTestApp;
+	const auth = authorizationHeaderFor({
+		email: USER_EMAIL,
+		roles: [Role.KUBERNATES],
+	});
 
-  beforeAll(async () => {
-    testApp = await createTicketTestApp({ modules: [SearchTicketModule] });
-  });
+	beforeAll(async () => {
+		testApp = await createTicketTestApp({ modules: [SearchTicketModule] });
+	});
 
-  beforeEach(async () => {
-    await testApp.resetTables();
-  });
+	beforeEach(async () => {
+		await testApp.resetTables();
+	});
 
-  afterAll(async () => {
-    await testApp.close();
-  });
+	afterAll(async () => {
+		await testApp.close();
+	});
 
-  function call(authorization: string | null = auth) {
-    const req = request(httpServerOf(testApp.app)).get(ENDPOINT);
-    if (authorization) {
-      req.set('Authorization', authorization);
-    }
-    return req;
-  }
+	function call(authorization: string | null = auth) {
+		const req = request(httpServerOf(testApp.app)).get(ENDPOINT);
+		if (authorization) {
+			req.set('Authorization', authorization);
+		}
+		return req;
+	}
 
-  describe('listing', () => {
-    it('returns 200 with an empty array when there are no tickets', async () => {
-      const response = await call().expect(200);
+	describe('listing', () => {
+		it('returns 200 with an empty array when there are no tickets', async () => {
+			const response = await call().expect(200);
 
-      expect(response.body).toEqual([]);
-    });
+			expect(response.body).toEqual([]);
+		});
 
-    it('returns 200 with every persisted ticket', async () => {
-      const first = await seedKubectlCommandTicket(testApp.dataSource, {
-        subject: 'First',
-      });
-      const second = await seedKubectlCommandTicket(testApp.dataSource, {
-        subject: 'Second',
-      });
+		it('returns 200 with every persisted ticket', async () => {
+			const first = await seedKubectlCommandTicket(testApp.dataSource, {
+				subject: 'First',
+			});
+			const second = await seedKubectlCommandTicket(testApp.dataSource, {
+				subject: 'Second',
+			});
 
-      const response = await call().expect(200);
+			const response = await call().expect(200);
 
-      expect(response.body).toHaveLength(2);
-      expect(bodyOf<KubectlCommandTicketEntity[]>(response)[0]).toEqual(
-        expect.objectContaining({
-          id: first.id,
-          number: first.number,
-          subject: 'First',
-          status: TicketStatus.OPEN,
-          response: '',
-          informer: 'informer@example.com',
-          assignee: 'assignee@example.com',
-          kubectlCommand: first.kubectlCommand,
-        }),
-      );
-      expect(bodyOf<KubectlCommandTicketEntity[]>(response)[1]).toEqual(
-        expect.objectContaining({
-          id: second.id,
-          number: second.number,
-          subject: 'Second',
-        }),
-      );
-    });
+			expect(response.body).toHaveLength(2);
+			expect(bodyOf<KubectlCommandTicketEntity[]>(response)[0]).toEqual(
+				expect.objectContaining({
+					id: first.id,
+					number: first.number,
+					subject: 'First',
+					status: TicketStatus.OPEN,
+					response: '',
+					informer: 'informer@example.com',
+					assignee: 'assignee@example.com',
+					kubectlCommand: first.kubectlCommand,
+				}),
+			);
+			expect(bodyOf<KubectlCommandTicketEntity[]>(response)[1]).toEqual(
+				expect.objectContaining({
+					id: second.id,
+					number: second.number,
+					subject: 'Second',
+				}),
+			);
+		});
 
-    it('includes the audit timestamps of every ticket', async () => {
-      await seedKubectlCommandTicket(testApp.dataSource);
+		it('includes the audit timestamps of every ticket', async () => {
+			await seedKubectlCommandTicket(testApp.dataSource);
 
-      const response = await call().expect(200);
+			const response = await call().expect(200);
 
-      expect(typeof bodyOf<KubectlCommandTicketEntity[]>(response)[0].createdAt).toBe('string');
-      expect(typeof bodyOf<KubectlCommandTicketEntity[]>(response)[0].updatedAt).toBe('string');
-    });
+			expect(typeof bodyOf<KubectlCommandTicketEntity[]>(response)[0].createdAt).toBe('string');
+			expect(typeof bodyOf<KubectlCommandTicketEntity[]>(response)[0].updatedAt).toBe('string');
+		});
 
-    it('orders the tickets by number ascending regardless of insertion order', async () => {
-      // The number is generated on insert, so it is rewritten afterwards to make
-      // the insertion order differ from the numeric order.
-      const repository = testApp.dataSource.getRepository(
-        KubectlCommandTicketEntity,
-      );
-      const inserted = await seedKubectlCommandTicket(testApp.dataSource, {
-        subject: 'Third',
-      });
-      const middle = await seedKubectlCommandTicket(testApp.dataSource, {
-        subject: 'Second',
-      });
-      const last = await seedKubectlCommandTicket(testApp.dataSource, {
-        subject: 'First',
-      });
-      await repository.update(inserted.id, { number: 300 });
-      await repository.update(middle.id, { number: 200 });
-      await repository.update(last.id, { number: 100 });
+		it('orders the tickets by number ascending regardless of insertion order', async () => {
+			// The number is generated on insert, so it is rewritten afterwards to make
+			// the insertion order differ from the numeric order.
+			const repository = testApp.dataSource.getRepository(KubectlCommandTicketEntity);
+			const inserted = await seedKubectlCommandTicket(testApp.dataSource, {
+				subject: 'Third',
+			});
+			const middle = await seedKubectlCommandTicket(testApp.dataSource, {
+				subject: 'Second',
+			});
+			const last = await seedKubectlCommandTicket(testApp.dataSource, {
+				subject: 'First',
+			});
+			await repository.update(inserted.id, { number: 300 });
+			await repository.update(middle.id, { number: 200 });
+			await repository.update(last.id, { number: 100 });
 
-      const response = await call().expect(200);
+			const response = await call().expect(200);
 
-      expect(
-        bodyOf<KubectlCommandTicketEntity[]>(response).map((ticket: { number: number }) => ticket.number),
-      ).toEqual([100, 200, 300]);
-      expect(
-        bodyOf<KubectlCommandTicketEntity[]>(response).map((ticket: { subject: string }) => ticket.subject),
-      ).toEqual(['First', 'Second', 'Third']);
-    });
+			expect(
+				bodyOf<KubectlCommandTicketEntity[]>(response).map(
+					(ticket: { number: number }) => ticket.number,
+				),
+			).toEqual([100, 200, 300]);
+			expect(
+				bodyOf<KubectlCommandTicketEntity[]>(response).map(
+					(ticket: { subject: string }) => ticket.subject,
+				),
+			).toEqual(['First', 'Second', 'Third']);
+		});
 
-    it('returns tickets in every status', async () => {
-      await seedKubectlCommandTicket(testApp.dataSource, {
-        status: TicketStatus.OPEN,
-      });
-      await seedKubectlCommandTicket(testApp.dataSource, {
-        status: TicketStatus.IN_PROGRESS,
-      });
-      await seedKubectlCommandTicket(testApp.dataSource, {
-        status: TicketStatus.APPROVED,
-      });
-      await seedKubectlCommandTicket(testApp.dataSource, {
-        status: TicketStatus.REJECTED,
-      });
+		it('returns tickets in every status', async () => {
+			await seedKubectlCommandTicket(testApp.dataSource, {
+				status: TicketStatus.OPEN,
+			});
+			await seedKubectlCommandTicket(testApp.dataSource, {
+				status: TicketStatus.IN_PROGRESS,
+			});
+			await seedKubectlCommandTicket(testApp.dataSource, {
+				status: TicketStatus.APPROVED,
+			});
+			await seedKubectlCommandTicket(testApp.dataSource, {
+				status: TicketStatus.REJECTED,
+			});
 
-      const response = await call().expect(200);
+			const response = await call().expect(200);
 
-      expect(
-        bodyOf<KubectlCommandTicketEntity[]>(response).map((ticket: { status: string }) => ticket.status),
-      ).toEqual([
-        TicketStatus.OPEN,
-        TicketStatus.IN_PROGRESS,
-        TicketStatus.APPROVED,
-        TicketStatus.REJECTED,
-      ]);
-    });
+			expect(
+				bodyOf<KubectlCommandTicketEntity[]>(response).map(
+					(ticket: { status: string }) => ticket.status,
+				),
+			).toEqual([
+				TicketStatus.OPEN,
+				TicketStatus.IN_PROGRESS,
+				TicketStatus.APPROVED,
+				TicketStatus.REJECTED,
+			]);
+		});
 
-    it('does not include tickets of other types', async () => {
-      await seedDatabaseManagementTicket(testApp.dataSource, {
-        subject: 'Another type',
-      });
+		it('does not include tickets of other types', async () => {
+			await seedDatabaseManagementTicket(testApp.dataSource, {
+				subject: 'Another type',
+			});
 
-      const response = await call().expect(200);
+			const response = await call().expect(200);
 
-      expect(response.body).toEqual([]);
-    });
-  });
+			expect(response.body).toEqual([]);
+		});
+	});
 
-  describe('authorization', () => {
-    it('returns 401 when the request has no bearer token', async () => {
-      const response = await call(null).expect(401);
+	describe('authorization', () => {
+		it('returns 401 when the request has no bearer token', async () => {
+			const response = await call(null).expect(401);
 
-      expect(bodyOf<ErrorBody>(response).message).toBe('Missing or malformed bearer token');
-    });
+			expect(bodyOf<ErrorBody>(response).message).toBe('Missing or malformed bearer token');
+		});
 
-    it('returns 401 when the token is signed with an unknown key', async () => {
-      const response = await call(
-        'Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6Im90aGVyIn0.e30.invalid',
-      ).expect(401);
+		it('returns 401 when the token is signed with an unknown key', async () => {
+			const response = await call(
+				'Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6Im90aGVyIn0.e30.invalid',
+			).expect(401);
 
-      expect(bodyOf<ErrorBody>(response).message).toBe('Invalid or expired token');
-    });
+			expect(bodyOf<ErrorBody>(response).message).toBe('Invalid or expired token');
+		});
 
-    it('returns 403 when the user only has the COMMON_USER role', async () => {
-      const response = await call(
-        authorizationHeaderFor({
-          email: USER_EMAIL,
-          roles: [Role.COMMON_USER],
-        }),
-      ).expect(403);
+		it('returns 403 when the user only has the COMMON_USER role', async () => {
+			const response = await call(
+				authorizationHeaderFor({
+					email: USER_EMAIL,
+					roles: [Role.COMMON_USER],
+				}),
+			).expect(403);
 
-      expect(bodyOf<ErrorBody>(response).message).toBe('You do not have the required role');
-    });
+			expect(bodyOf<ErrorBody>(response).message).toBe('You do not have the required role');
+		});
 
-    it('returns 403 when the user only has roles of another domain', async () => {
-      await call(
-        authorizationHeaderFor({
-          email: USER_EMAIL,
-          roles: [Role.DATABASE, Role.SERVER_APPROVER],
-        }),
-      ).expect(403);
-    });
+		it('returns 403 when the user only has roles of another domain', async () => {
+			await call(
+				authorizationHeaderFor({
+					email: USER_EMAIL,
+					roles: [Role.DATABASE, Role.SERVER_APPROVER],
+				}),
+			).expect(403);
+		});
 
-    it('returns 403 when the token was issued for another application', async () => {
-      const response = await call(
-        authorizationHeaderFor({
-          email: USER_EMAIL,
-          roles: [Role.ADMIN],
-          applicationName: 'iam',
-        }),
-      ).expect(403);
+		it('returns 403 when the token was issued for another application', async () => {
+			const response = await call(
+				authorizationHeaderFor({
+					email: USER_EMAIL,
+					roles: [Role.ADMIN],
+					applicationName: 'iam',
+				}),
+			).expect(403);
 
-      expect(bodyOf<ErrorBody>(response).message).toBe(
-        'This token was not issued for the ticket-hub-api application',
-      );
-    });
+			expect(bodyOf<ErrorBody>(response).message).toBe(
+				'This token was not issued for the ticket-hub-api application',
+			);
+		});
 
-    it('returns 403 when the verified token carries no apps claim', async () => {
-      const response = await call(
-        authorizationHeaderForClaims({ email: 'user@example.com' }),
-      ).expect(403);
+		it('returns 403 when the verified token carries no apps claim', async () => {
+			const response = await call(
+				authorizationHeaderForClaims({ email: 'user@example.com' }),
+			).expect(403);
 
-      expect(bodyOf<ErrorBody>(response).message).toBe(
-        'The token does not carry application information',
-      );
-    });
+			expect(bodyOf<ErrorBody>(response).message).toBe(
+				'The token does not carry application information',
+			);
+		});
 
-    it('accepts the ADMIN role', async () => {
-      await call(
-        authorizationHeaderFor({ email: USER_EMAIL, roles: [Role.ADMIN] }),
-      ).expect(200);
-    });
+		it('accepts the ADMIN role', async () => {
+			await call(authorizationHeaderFor({ email: USER_EMAIL, roles: [Role.ADMIN] })).expect(200);
+		});
 
-    it('accepts the KUBERNATES role', async () => {
-      await call(
-        authorizationHeaderFor({ email: USER_EMAIL, roles: [Role.KUBERNATES] }),
-      ).expect(200);
-    });
+		it('accepts the KUBERNATES role', async () => {
+			await call(authorizationHeaderFor({ email: USER_EMAIL, roles: [Role.KUBERNATES] })).expect(
+				200,
+			);
+		});
 
-    it('accepts the KUBERNATES_APPROVER role', async () => {
-      await call(
-        authorizationHeaderFor({
-          email: USER_EMAIL,
-          roles: [Role.KUBERNATES_APPROVER],
-        }),
-      ).expect(200);
-    });
-  });
+		it('accepts the KUBERNATES_APPROVER role', async () => {
+			await call(
+				authorizationHeaderFor({
+					email: USER_EMAIL,
+					roles: [Role.KUBERNATES_APPROVER],
+				}),
+			).expect(200);
+		});
+	});
 });

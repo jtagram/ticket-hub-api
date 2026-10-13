@@ -4,8 +4,8 @@ import { AppUserAuthService } from './app-user-auth.service';
 
 @Global()
 @Module({
-  imports: [HttpModule],
-  providers: [AppUserAuthService],
-  exports: [AppUserAuthService],
+	imports: [HttpModule],
+	providers: [AppUserAuthService],
+	exports: [AppUserAuthService],
 })
 export class AppUserAuthModule {}

@@ -11,93 +11,79 @@ import { prototypeMethod } from '../../../../../test/helpers/prototype-method';
 // @nestjs/typeorm is ESM-only and Jest runs as CommonJS. The code under test is
 // built by hand below, so the injection decorator can be a no-op.
 jest.mock('@nestjs/typeorm', () => ({
-  InjectRepository: () => () => undefined,
+	InjectRepository: () => () => undefined,
 }));
 
 type ServiceMethod = jest.Mock<(...args: unknown[]) => Promise<unknown>>;
 
 function buildMock(): ServiceMethod {
-  return jest.fn<(...args: unknown[]) => Promise<unknown>>();
+	return jest.fn<(...args: unknown[]) => Promise<unknown>>();
 }
 
 describe('SearchTicketController.findAllKubernetesManifestTickets', () => {
-  let service: Record<string, ServiceMethod>;
-  let controller: SearchTicketController;
+	let service: Record<string, ServiceMethod>;
+	let controller: SearchTicketController;
 
-  beforeEach(() => {
-    service = {
-      findAllDatabaseManagementTickets: buildMock(),
-      findDatabaseManagementTicketByNumber: buildMock(),
-      findAllDatabaseProvisioningTickets: buildMock(),
-      findDatabaseProvisioningTicketByNumber: buildMock(),
-      findAllServerManagementTickets: buildMock(),
-      findServerManagementTicketByNumber: buildMock(),
-      findAllKubernetesManifestTickets: buildMock(),
-      findKubernetesManifestTicketByNumber: buildMock(),
-      findAllKubectlCommandTickets: buildMock(),
-      findKubectlCommandTicketByNumber: buildMock(),
-    };
-    controller = new SearchTicketController(
-      service as unknown as SearchTicketService,
-    );
-  });
+	beforeEach(() => {
+		service = {
+			findAllDatabaseManagementTickets: buildMock(),
+			findDatabaseManagementTicketByNumber: buildMock(),
+			findAllDatabaseProvisioningTickets: buildMock(),
+			findDatabaseProvisioningTicketByNumber: buildMock(),
+			findAllServerManagementTickets: buildMock(),
+			findServerManagementTicketByNumber: buildMock(),
+			findAllKubernetesManifestTickets: buildMock(),
+			findKubernetesManifestTicketByNumber: buildMock(),
+			findAllKubectlCommandTickets: buildMock(),
+			findKubectlCommandTicketByNumber: buildMock(),
+		};
+		controller = new SearchTicketController(service as unknown as SearchTicketService);
+	});
 
-  it('delegates to the matching service method and returns its result', async () => {
-    const tickets = [{ id: 1, number: 1 }];
-    service.findAllKubernetesManifestTickets.mockResolvedValue(tickets);
+	it('delegates to the matching service method and returns its result', async () => {
+		const tickets = [{ id: 1, number: 1 }];
+		service.findAllKubernetesManifestTickets.mockResolvedValue(tickets);
 
-    await expect(controller.findAllKubernetesManifestTickets()).resolves.toBe(
-      tickets,
-    );
+		await expect(controller.findAllKubernetesManifestTickets()).resolves.toBe(tickets);
 
-    expect(service.findAllKubernetesManifestTickets).toHaveBeenCalledTimes(1);
-    expect(service.findAllKubernetesManifestTickets).toHaveBeenCalledWith();
-  });
+		expect(service.findAllKubernetesManifestTickets).toHaveBeenCalledTimes(1);
+		expect(service.findAllKubernetesManifestTickets).toHaveBeenCalledWith();
+	});
 
-  it('does not call any other service method', async () => {
-    service.findAllKubernetesManifestTickets.mockResolvedValue([]);
+	it('does not call any other service method', async () => {
+		service.findAllKubernetesManifestTickets.mockResolvedValue([]);
 
-    await controller.findAllKubernetesManifestTickets();
+		await controller.findAllKubernetesManifestTickets();
 
-    Object.entries(service)
-      .filter(([name]) => name !== 'findAllKubernetesManifestTickets')
-      .forEach(([, mock]) => expect(mock).not.toHaveBeenCalled());
-  });
+		Object.entries(service)
+			.filter(([name]) => name !== 'findAllKubernetesManifestTickets')
+			.forEach(([, mock]) => expect(mock).not.toHaveBeenCalled());
+	});
 
-  it('propagates a service rejection', async () => {
-    const failure = new Error('boom');
-    service.findAllKubernetesManifestTickets.mockRejectedValue(failure);
+	it('propagates a service rejection', async () => {
+		const failure = new Error('boom');
+		service.findAllKubernetesManifestTickets.mockRejectedValue(failure);
 
-    await expect(controller.findAllKubernetesManifestTickets()).rejects.toBe(
-      failure,
-    );
-  });
+		await expect(controller.findAllKubernetesManifestTickets()).rejects.toBe(failure);
+	});
 
-  it('is routed as GET /tickets/kubernetes/manifest', () => {
-    const handler =
-      prototypeMethod(SearchTicketController.prototype, 'findAllKubernetesManifestTickets');
+	it('is routed as GET /tickets/kubernetes/manifest', () => {
+		const handler = prototypeMethod(
+			SearchTicketController.prototype,
+			'findAllKubernetesManifestTickets',
+		);
 
-    expect(Reflect.getMetadata(PATH_METADATA, SearchTicketController)).toBe(
-      'tickets',
-    );
-    expect(Reflect.getMetadata(PATH_METADATA, handler)).toBe(
-      'kubernetes/manifest',
-    );
-    expect(Reflect.getMetadata(METHOD_METADATA, handler)).toBe(
-      RequestMethod.GET,
-    );
-  });
+		expect(Reflect.getMetadata(PATH_METADATA, SearchTicketController)).toBe('tickets');
+		expect(Reflect.getMetadata(PATH_METADATA, handler)).toBe('kubernetes/manifest');
+		expect(Reflect.getMetadata(METHOD_METADATA, handler)).toBe(RequestMethod.GET);
+	});
 
-  it('is restricted to the roles ADMIN, KUBERNATES, KUBERNATES_APPROVER', () => {
-    const roles = new Reflector().get<Role[]>(
-      ROLES_KEY,
-      prototypeMethod(SearchTicketController.prototype, 'findAllKubernetesManifestTickets'),
-    );
+	it('is restricted to the roles ADMIN, KUBERNATES, KUBERNATES_APPROVER', () => {
+		const roles = new Reflector().get<Role[]>(
+			ROLES_KEY,
+			prototypeMethod(SearchTicketController.prototype, 'findAllKubernetesManifestTickets'),
+		);
 
-    expect(roles).toEqual([
-      Role.ADMIN,
-      Role.KUBERNATES,
-      Role.KUBERNATES_APPROVER,
-    ]);
-  });
+		expect(roles).toEqual([Role.ADMIN, Role.KUBERNATES, Role.KUBERNATES_APPROVER]);
+	});
 });

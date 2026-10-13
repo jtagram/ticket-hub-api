@@ -1,23 +1,10 @@
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-} from '@jest/globals';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from '@jest/globals';
 import request from 'supertest';
 import { KubectlCommandTicketEntity } from '../../src/common/database/kubectl-command-ticket/kubectl-command-ticket.entity';
 import { TicketStatus } from '../../src/common/database/ticket-status.enum';
 import { Role } from '../../src/common/roles/role.enum';
-import {
-  CreateTicketTestApp,
-  createCreateTicketTestApp,
-} from '../helpers/create-ticket-test-app';
-import {
-  authorizationHeaderFor,
-  authorizationHeaderForClaims,
-} from '../helpers/test-auth';
+import { CreateTicketTestApp, createCreateTicketTestApp } from '../helpers/create-ticket-test-app';
+import { authorizationHeaderFor, authorizationHeaderForClaims } from '../helpers/test-auth';
 import { httpServerOf } from '../helpers/http-server';
 import { bodyOf, ErrorBody } from '../helpers/response-types';
 
@@ -25,313 +12,283 @@ const ENDPOINT = '/tickets/kubernetes/kubectl';
 const USER_EMAIL = 'kubectl.user@example.com';
 
 function validPayload(overrides: Record<string, unknown> = {}) {
-  return {
-    informer: 'client.sent@example.com',
-    assignee: 'assignee@example.com',
-    department: 'PLATFORM',
-    subject: 'List payment pods',
-    description: 'Check the payments pods',
-    kubectlCommand: 'kubectl get pods -n payments',
-    ...overrides,
-  };
+	return {
+		informer: 'client.sent@example.com',
+		assignee: 'assignee@example.com',
+		department: 'PLATFORM',
+		subject: 'List payment pods',
+		description: 'Check the payments pods',
+		kubectlCommand: 'kubectl get pods -n payments',
+		...overrides,
+	};
 }
 
 describe('POST /tickets/kubernetes/kubectl (e2e)', () => {
-  let testApp: CreateTicketTestApp;
-  const auth = authorizationHeaderFor({
-    email: USER_EMAIL,
-    roles: [Role.KUBERNATES],
-  });
+	let testApp: CreateTicketTestApp;
+	const auth = authorizationHeaderFor({
+		email: USER_EMAIL,
+		roles: [Role.KUBERNATES],
+	});
 
-  beforeAll(async () => {
-    testApp = await createCreateTicketTestApp();
-  });
+	beforeAll(async () => {
+		testApp = await createCreateTicketTestApp();
+	});
 
-  beforeEach(async () => {
-    await testApp.resetTables();
-  });
+	beforeEach(async () => {
+		await testApp.resetTables();
+	});
 
-  afterAll(async () => {
-    await testApp.close();
-  });
+	afterAll(async () => {
+		await testApp.close();
+	});
 
-  function post(body: unknown, authorization: string | null = auth) {
-    const req = request(httpServerOf(testApp.app)).post(ENDPOINT);
-    if (authorization) {
-      req.set('Authorization', authorization);
-    }
-    return req.send(body as object);
-  }
+	function post(body: unknown, authorization: string | null = auth) {
+		const req = request(httpServerOf(testApp.app)).post(ENDPOINT);
+		if (authorization) {
+			req.set('Authorization', authorization);
+		}
+		return req.send(body as object);
+	}
 
-  describe('creation', () => {
-    it('returns 201 with the persisted ticket and stores it in the database', async () => {
-      const response = await post(validPayload()).expect(201);
+	describe('creation', () => {
+		it('returns 201 with the persisted ticket and stores it in the database', async () => {
+			const response = await post(validPayload()).expect(201);
 
-      expect(response.body).toEqual(
-        expect.objectContaining({
-          id: expect.any(Number),
-          number: expect.any(Number),
-          informer: USER_EMAIL,
-          assignee: 'assignee@example.com',
-          department: 'PLATFORM',
-          subject: 'List payment pods',
-          description: 'Check the payments pods',
-          status: TicketStatus.OPEN,
-          response: '',
-          kubectlCommand: 'kubectl get pods -n payments',
-        }),
-      );
+			expect(response.body).toEqual(
+				expect.objectContaining({
+					id: expect.any(Number),
+					number: expect.any(Number),
+					informer: USER_EMAIL,
+					assignee: 'assignee@example.com',
+					department: 'PLATFORM',
+					subject: 'List payment pods',
+					description: 'Check the payments pods',
+					status: TicketStatus.OPEN,
+					response: '',
+					kubectlCommand: 'kubectl get pods -n payments',
+				}),
+			);
 
-      const rows = await testApp.dataSource
-        .getRepository(KubectlCommandTicketEntity)
-        .find();
-      expect(rows).toHaveLength(1);
-      expect(rows[0].id).toBe(bodyOf<KubectlCommandTicketEntity>(response).id);
-      expect(rows[0].number).toBe(bodyOf<KubectlCommandTicketEntity>(response).number);
-      expect(rows[0].informer).toBe(USER_EMAIL);
-      expect(rows[0].status).toBe(TicketStatus.OPEN);
-      expect(rows[0].response).toBe('');
-      expect(rows[0].kubectlCommand).toBe('kubectl get pods -n payments');
-    });
+			const rows = await testApp.dataSource.getRepository(KubectlCommandTicketEntity).find();
+			expect(rows).toHaveLength(1);
+			expect(rows[0].id).toBe(bodyOf<KubectlCommandTicketEntity>(response).id);
+			expect(rows[0].number).toBe(bodyOf<KubectlCommandTicketEntity>(response).number);
+			expect(rows[0].informer).toBe(USER_EMAIL);
+			expect(rows[0].status).toBe(TicketStatus.OPEN);
+			expect(rows[0].response).toBe('');
+			expect(rows[0].kubectlCommand).toBe('kubectl get pods -n payments');
+		});
 
-    it('assigns increasing numbers to successive tickets', async () => {
-      const first = await post(validPayload()).expect(201);
-      const second = await post(validPayload({ subject: 'Second' })).expect(
-        201,
-      );
-      const third = await post(validPayload({ subject: 'Third' })).expect(201);
+		it('assigns increasing numbers to successive tickets', async () => {
+			const first = await post(validPayload()).expect(201);
+			const second = await post(validPayload({ subject: 'Second' })).expect(201);
+			const third = await post(validPayload({ subject: 'Third' })).expect(201);
 
-      expect(bodyOf<KubectlCommandTicketEntity>(second).number).toBeGreaterThan(bodyOf<KubectlCommandTicketEntity>(first).number);
-      expect(bodyOf<KubectlCommandTicketEntity>(third).number).toBeGreaterThan(bodyOf<KubectlCommandTicketEntity>(second).number);
-    });
+			expect(bodyOf<KubectlCommandTicketEntity>(second).number).toBeGreaterThan(
+				bodyOf<KubectlCommandTicketEntity>(first).number,
+			);
+			expect(bodyOf<KubectlCommandTicketEntity>(third).number).toBeGreaterThan(
+				bodyOf<KubectlCommandTicketEntity>(second).number,
+			);
+		});
 
-    it('ignores an informer sent in the body and stores the authenticated user email', async () => {
-      const response = await post(
-        validPayload({ informer: 'someone.else@example.com' }),
-      ).expect(201);
+		it('ignores an informer sent in the body and stores the authenticated user email', async () => {
+			const response = await post(validPayload({ informer: 'someone.else@example.com' })).expect(
+				201,
+			);
 
-      expect(bodyOf<KubectlCommandTicketEntity>(response).informer).toBe(USER_EMAIL);
-      const rows = await testApp.dataSource
-        .getRepository(KubectlCommandTicketEntity)
-        .find();
-      expect(rows[0].informer).toBe(USER_EMAIL);
-    });
+			expect(bodyOf<KubectlCommandTicketEntity>(response).informer).toBe(USER_EMAIL);
+			const rows = await testApp.dataSource.getRepository(KubectlCommandTicketEntity).find();
+			expect(rows[0].informer).toBe(USER_EMAIL);
+		});
 
-    it('returns 400 when the informer sent in the body is not a valid email', async () => {
-      const response = await post(
-        validPayload({ informer: 'not-an-email' }),
-      ).expect(400);
+		it('returns 400 when the informer sent in the body is not a valid email', async () => {
+			const response = await post(validPayload({ informer: 'not-an-email' })).expect(400);
 
-      expect(bodyOf<ErrorBody>(response).message).toEqual(['informer must be an email']);
-    });
-  });
+			expect(bodyOf<ErrorBody>(response).message).toEqual(['informer must be an email']);
+		});
+	});
 
-  describe('validation', () => {
-    it('returns 400 when a required field is missing', async () => {
-      const { subject, ...payload } = validPayload();
-      expect(subject).toBeDefined();
+	describe('validation', () => {
+		it('returns 400 when a required field is missing', async () => {
+			const { subject, ...payload } = validPayload();
+			expect(subject).toBeDefined();
 
-      const response = await post(payload).expect(400);
+			const response = await post(payload).expect(400);
 
-      expect(bodyOf<ErrorBody>(response).statusCode).toBe(400);
-      expect(bodyOf<ErrorBody>(response).error).toBe('Bad Request');
-      expect(bodyOf<ErrorBody>(response).message).toEqual(
-        expect.arrayContaining(['subject must be a string']),
-      );
-    });
+			expect(bodyOf<ErrorBody>(response).statusCode).toBe(400);
+			expect(bodyOf<ErrorBody>(response).error).toBe('Bad Request');
+			expect(bodyOf<ErrorBody>(response).message).toEqual(
+				expect.arrayContaining(['subject must be a string']),
+			);
+		});
 
-    it('returns 400 when a field exceeds its maximum length', async () => {
-      const response = await post(
-        validPayload({ subject: 'a'.repeat(501) }),
-      ).expect(400);
+		it('returns 400 when a field exceeds its maximum length', async () => {
+			const response = await post(validPayload({ subject: 'a'.repeat(501) })).expect(400);
 
-      expect(bodyOf<ErrorBody>(response).message).toEqual([
-        'subject must be shorter than or equal to 500 characters',
-      ]);
-    });
+			expect(bodyOf<ErrorBody>(response).message).toEqual([
+				'subject must be shorter than or equal to 500 characters',
+			]);
+		});
 
-    it('returns 400 when the body has an unknown property', async () => {
-      const response = await post(validPayload({ unexpected: 'value' })).expect(
-        400,
-      );
+		it('returns 400 when the body has an unknown property', async () => {
+			const response = await post(validPayload({ unexpected: 'value' })).expect(400);
 
-      expect(bodyOf<ErrorBody>(response).message).toEqual([
-        'property unexpected should not exist',
-      ]);
-    });
+			expect(bodyOf<ErrorBody>(response).message).toEqual(['property unexpected should not exist']);
+		});
 
-    it('does not require the informer in the body (the token email is used)', async () => {
-      const { informer, ...payload } = validPayload();
-      expect(informer).toBeDefined();
+		it('does not require the informer in the body (the token email is used)', async () => {
+			const { informer, ...payload } = validPayload();
+			expect(informer).toBeDefined();
 
-      const response = await post(payload).expect(201);
+			const response = await post(payload).expect(201);
 
-      expect(bodyOf<KubectlCommandTicketEntity>(response).informer).toBe(USER_EMAIL);
-      const rows = await testApp.dataSource
-        .getRepository(KubectlCommandTicketEntity)
-        .find();
-      expect(rows).toHaveLength(1);
-      expect(rows[0].informer).toBe(USER_EMAIL);
-    });
+			expect(bodyOf<KubectlCommandTicketEntity>(response).informer).toBe(USER_EMAIL);
+			const rows = await testApp.dataSource.getRepository(KubectlCommandTicketEntity).find();
+			expect(rows).toHaveLength(1);
+			expect(rows[0].informer).toBe(USER_EMAIL);
+		});
 
-    it('returns 400 when the informer is present but empty', async () => {
-      const response = await post(validPayload({ informer: '' })).expect(400);
+		it('returns 400 when the informer is present but empty', async () => {
+			const response = await post(validPayload({ informer: '' })).expect(400);
 
-      expect(bodyOf<ErrorBody>(response).message).toEqual(
-        expect.arrayContaining(['informer must be an email']),
-      );
-    });
+			expect(bodyOf<ErrorBody>(response).message).toEqual(
+				expect.arrayContaining(['informer must be an email']),
+			);
+		});
 
-    it('returns 400 when a field has the wrong type', async () => {
-      const response = await post(validPayload({ kubectlCommand: 123 })).expect(
-        400,
-      );
+		it('returns 400 when a field has the wrong type', async () => {
+			const response = await post(validPayload({ kubectlCommand: 123 })).expect(400);
 
-      expect(bodyOf<ErrorBody>(response).message).toEqual(
-        expect.arrayContaining(['kubectlCommand must be a string']),
-      );
-    });
+			expect(bodyOf<ErrorBody>(response).message).toEqual(
+				expect.arrayContaining(['kubectlCommand must be a string']),
+			);
+		});
 
-    it('does not persist anything when validation fails', async () => {
-      await post(validPayload({ unexpected: 'value' })).expect(400);
+		it('does not persist anything when validation fails', async () => {
+			await post(validPayload({ unexpected: 'value' })).expect(400);
 
-      const count = await testApp.dataSource
-        .getRepository(KubectlCommandTicketEntity)
-        .count();
-      expect(count).toBe(0);
-    });
+			const count = await testApp.dataSource.getRepository(KubectlCommandTicketEntity).count();
+			expect(count).toBe(0);
+		});
 
-    it('returns 400 when a required field is whitespace only', async () => {
-      const response = await post(validPayload({ subject: '   ' })).expect(400);
+		it('returns 400 when a required field is whitespace only', async () => {
+			const response = await post(validPayload({ subject: '   ' })).expect(400);
 
-      expect(bodyOf<ErrorBody>(response).message).toEqual(['subject must not be blank']);
-      const count = await testApp.dataSource
-        .getRepository(KubectlCommandTicketEntity)
-        .count();
-      expect(count).toBe(0);
-    });
+			expect(bodyOf<ErrorBody>(response).message).toEqual(['subject must not be blank']);
+			const count = await testApp.dataSource.getRepository(KubectlCommandTicketEntity).count();
+			expect(count).toBe(0);
+		});
 
-    it('returns 400 when kubectlCommand is whitespace only', async () => {
-      const response = await post(
-        validPayload({ kubectlCommand: '   ' }),
-      ).expect(400);
+		it('returns 400 when kubectlCommand is whitespace only', async () => {
+			const response = await post(validPayload({ kubectlCommand: '   ' })).expect(400);
 
-      expect(bodyOf<ErrorBody>(response).message).toEqual([
-        'kubectlCommand must not be blank',
-      ]);
-      const count = await testApp.dataSource
-        .getRepository(KubectlCommandTicketEntity)
-        .count();
-      expect(count).toBe(0);
-    });
+			expect(bodyOf<ErrorBody>(response).message).toEqual(['kubectlCommand must not be blank']);
+			const count = await testApp.dataSource.getRepository(KubectlCommandTicketEntity).count();
+			expect(count).toBe(0);
+		});
 
-    it('returns 400 when description is made only of tabs and line breaks', async () => {
-      const response = await post(
-        validPayload({ description: ' \t\r\n ' }),
-      ).expect(400);
+		it('returns 400 when description is made only of tabs and line breaks', async () => {
+			const response = await post(validPayload({ description: ' \t\r\n ' })).expect(400);
 
-      expect(bodyOf<ErrorBody>(response).message).toEqual(['description must not be blank']);
-      const count = await testApp.dataSource
-        .getRepository(KubectlCommandTicketEntity)
-        .count();
-      expect(count).toBe(0);
-    });
-  });
+			expect(bodyOf<ErrorBody>(response).message).toEqual(['description must not be blank']);
+			const count = await testApp.dataSource.getRepository(KubectlCommandTicketEntity).count();
+			expect(count).toBe(0);
+		});
+	});
 
-  describe('authorization', () => {
-    it('returns 401 when the request has no bearer token', async () => {
-      const response = await post(validPayload(), null).expect(401);
+	describe('authorization', () => {
+		it('returns 401 when the request has no bearer token', async () => {
+			const response = await post(validPayload(), null).expect(401);
 
-      expect(bodyOf<ErrorBody>(response).message).toBe('Missing or malformed bearer token');
-    });
+			expect(bodyOf<ErrorBody>(response).message).toBe('Missing or malformed bearer token');
+		});
 
-    it('returns 401 when the token is signed with an unknown key', async () => {
-      const response = await post(
-        validPayload(),
-        'Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6Im90aGVyIn0.e30.invalid',
-      ).expect(401);
+		it('returns 401 when the token is signed with an unknown key', async () => {
+			const response = await post(
+				validPayload(),
+				'Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6Im90aGVyIn0.e30.invalid',
+			).expect(401);
 
-      expect(bodyOf<ErrorBody>(response).message).toBe('Invalid or expired token');
-    });
+			expect(bodyOf<ErrorBody>(response).message).toBe('Invalid or expired token');
+		});
 
-    it('returns 403 when the user only has the COMMON_USER role', async () => {
-      const response = await post(
-        validPayload(),
-        authorizationHeaderFor({
-          email: USER_EMAIL,
-          roles: [Role.COMMON_USER],
-        }),
-      ).expect(403);
+		it('returns 403 when the user only has the COMMON_USER role', async () => {
+			const response = await post(
+				validPayload(),
+				authorizationHeaderFor({
+					email: USER_EMAIL,
+					roles: [Role.COMMON_USER],
+				}),
+			).expect(403);
 
-      expect(bodyOf<ErrorBody>(response).message).toBe('You do not have the required role');
-    });
+			expect(bodyOf<ErrorBody>(response).message).toBe('You do not have the required role');
+		});
 
-    it('returns 403 when the user only has roles of another domain', async () => {
-      await post(
-        validPayload(),
-        authorizationHeaderFor({
-          email: USER_EMAIL,
-          roles: [Role.DATABASE, Role.SERVER_APPROVER],
-        }),
-      ).expect(403);
-    });
+		it('returns 403 when the user only has roles of another domain', async () => {
+			await post(
+				validPayload(),
+				authorizationHeaderFor({
+					email: USER_EMAIL,
+					roles: [Role.DATABASE, Role.SERVER_APPROVER],
+				}),
+			).expect(403);
+		});
 
-    it('returns 403 when the token was issued for another application', async () => {
-      const response = await post(
-        validPayload(),
-        authorizationHeaderFor({
-          email: USER_EMAIL,
-          roles: [Role.ADMIN],
-          applicationName: 'iam',
-        }),
-      ).expect(403);
+		it('returns 403 when the token was issued for another application', async () => {
+			const response = await post(
+				validPayload(),
+				authorizationHeaderFor({
+					email: USER_EMAIL,
+					roles: [Role.ADMIN],
+					applicationName: 'iam',
+				}),
+			).expect(403);
 
-      expect(bodyOf<ErrorBody>(response).message).toBe(
-        'This token was not issued for the ticket-hub-api application',
-      );
-    });
+			expect(bodyOf<ErrorBody>(response).message).toBe(
+				'This token was not issued for the ticket-hub-api application',
+			);
+		});
 
-    it('returns 403 when the verified token carries no apps claim', async () => {
-      const response = await post(
-        validPayload(),
-        authorizationHeaderForClaims({ email: 'user@example.com' }),
-      ).expect(403);
+		it('returns 403 when the verified token carries no apps claim', async () => {
+			const response = await post(
+				validPayload(),
+				authorizationHeaderForClaims({ email: 'user@example.com' }),
+			).expect(403);
 
-      expect(bodyOf<ErrorBody>(response).message).toBe(
-        'The token does not carry application information',
-      );
-    });
+			expect(bodyOf<ErrorBody>(response).message).toBe(
+				'The token does not carry application information',
+			);
+		});
 
-    it('does not persist anything when the user is forbidden', async () => {
-      await post(
-        validPayload(),
-        authorizationHeaderFor({
-          email: USER_EMAIL,
-          roles: [Role.COMMON_USER],
-        }),
-      ).expect(403);
+		it('does not persist anything when the user is forbidden', async () => {
+			await post(
+				validPayload(),
+				authorizationHeaderFor({
+					email: USER_EMAIL,
+					roles: [Role.COMMON_USER],
+				}),
+			).expect(403);
 
-      const count = await testApp.dataSource
-        .getRepository(KubectlCommandTicketEntity)
-        .count();
-      expect(count).toBe(0);
-    });
+			const count = await testApp.dataSource.getRepository(KubectlCommandTicketEntity).count();
+			expect(count).toBe(0);
+		});
 
-    it('accepts the ADMIN role', async () => {
-      await post(
-        validPayload(),
-        authorizationHeaderFor({ email: USER_EMAIL, roles: [Role.ADMIN] }),
-      ).expect(201);
-    });
+		it('accepts the ADMIN role', async () => {
+			await post(
+				validPayload(),
+				authorizationHeaderFor({ email: USER_EMAIL, roles: [Role.ADMIN] }),
+			).expect(201);
+		});
 
-    it('accepts the KUBERNATES_APPROVER role', async () => {
-      await post(
-        validPayload(),
-        authorizationHeaderFor({
-          email: USER_EMAIL,
-          roles: [Role.KUBERNATES_APPROVER],
-        }),
-      ).expect(201);
-    });
-  });
+		it('accepts the KUBERNATES_APPROVER role', async () => {
+			await post(
+				validPayload(),
+				authorizationHeaderFor({
+					email: USER_EMAIL,
+					roles: [Role.KUBERNATES_APPROVER],
+				}),
+			).expect(201);
+		});
+	});
 });

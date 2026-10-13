@@ -15,109 +15,105 @@ jest.mock('@nestjs/config', () => ({ ConfigService: class ConfigService {} }));
 const BASE_URL = 'http://infra-hub-api:3001';
 const TARGET_APPLICATION = 'infra-hub';
 const config: Record<string, string> = {
-  INFRA_HUB_API_URL: BASE_URL,
-  INFRA_HUB_API_APPLICATION_NAME: TARGET_APPLICATION,
+	INFRA_HUB_API_URL: BASE_URL,
+	INFRA_HUB_API_APPLICATION_NAME: TARGET_APPLICATION,
 };
 
 describe('InfraHubApiConnector.createDatabase', () => {
-  let post: jest.Mock;
-  let getAccessToken: jest.Mock<(...args: unknown[]) => Promise<unknown>>;
-  let connector: InfraHubApiConnector;
+	let post: jest.Mock;
+	let getAccessToken: jest.Mock<(...args: unknown[]) => Promise<unknown>>;
+	let connector: InfraHubApiConnector;
 
-  beforeEach(() => {
-    post = jest.fn();
-    getAccessToken = jest
-      .fn<(...args: unknown[]) => Promise<unknown>>()
-      .mockResolvedValue('service-token');
-    connector = new InfraHubApiConnector(
-      { post } as unknown as HttpService,
-      {
-        get: jest.fn((key: string) => config[key]),
-      } as unknown as ConfigService,
-      { getAccessToken } as unknown as AppUserAuthService,
-    );
-  });
+	beforeEach(() => {
+		post = jest.fn();
+		getAccessToken = jest
+			.fn<(...args: unknown[]) => Promise<unknown>>()
+			.mockResolvedValue('service-token');
+		connector = new InfraHubApiConnector(
+			{ post } as unknown as HttpService,
+			{
+				get: jest.fn((key: string) => config[key]),
+			} as unknown as ConfigService,
+			{ getAccessToken } as unknown as AppUserAuthService,
+		);
+	});
 
-  const body = {
-    numberOfTickets: 3,
-    namespace: 'dev',
-    deployment: 'pg',
-    dbName: 'app',
-  } as never;
+	const body = {
+		numberOfTickets: 3,
+		namespace: 'dev',
+		deployment: 'pg',
+		dbName: 'app',
+	} as never;
 
-  it('asks for a token of the infra-hub application', async () => {
-    post.mockReturnValue(of({ data: {} }));
+	it('asks for a token of the infra-hub application', async () => {
+		post.mockReturnValue(of({ data: {} }));
 
-    await connector.createDatabase(body);
+		await connector.createDatabase(body);
 
-    expect(getAccessToken).toHaveBeenCalledWith(TARGET_APPLICATION);
-  });
+		expect(getAccessToken).toHaveBeenCalledWith(TARGET_APPLICATION);
+	});
 
-  it('POSTs to /database-hub-api/create-database with the bearer token and the body', async () => {
-    post.mockReturnValue(of({ data: {} }));
+	it('POSTs to /database-hub-api/create-database with the bearer token and the body', async () => {
+		post.mockReturnValue(of({ data: {} }));
 
-    await connector.createDatabase(body);
+		await connector.createDatabase(body);
 
-    expect(post).toHaveBeenCalledTimes(1);
-    expect(post).toHaveBeenCalledWith(
-      `${BASE_URL}/database-hub-api/create-database`,
-      body,
-      { headers: { Authorization: 'Bearer service-token' } },
-    );
-  });
+		expect(post).toHaveBeenCalledTimes(1);
+		expect(post).toHaveBeenCalledWith(`${BASE_URL}/database-hub-api/create-database`, body, {
+			headers: { Authorization: 'Bearer service-token' },
+		});
+	});
 
-  it('returns the response data', async () => {
-    const data = { executionResult: { success: true }, logId: 'log-5' };
-    post.mockReturnValue(of({ data }));
+	it('returns the response data', async () => {
+		const data = { executionResult: { success: true }, logId: 'log-5' };
+		post.mockReturnValue(of({ data }));
 
-    await expect(connector.createDatabase(body)).resolves.toBe(data);
-  });
+		await expect(connector.createDatabase(body)).resolves.toBe(data);
+	});
 
-  it('maps an infra-hub-api error response to an HttpException with the same status and body', async () => {
-    const response = { status: 422, data: { message: 'invalid playbook' } };
-    post.mockReturnValue(
-      throwError(
-        () =>
-          new AxiosError(
-            'Request failed',
-            'ERR_BAD_REQUEST',
-            undefined,
-            undefined,
-            response as never,
-          ),
-      ),
-    );
+	it('maps an infra-hub-api error response to an HttpException with the same status and body', async () => {
+		const response = { status: 422, data: { message: 'invalid playbook' } };
+		post.mockReturnValue(
+			throwError(
+				() =>
+					new AxiosError(
+						'Request failed',
+						'ERR_BAD_REQUEST',
+						undefined,
+						undefined,
+						response as never,
+					),
+			),
+		);
 
-    const failure = await connector
-      .createDatabase(body)
-      .catch((e: unknown) => e);
+		const failure = await connector.createDatabase(body).catch((e: unknown) => e);
 
-    expect(failure).toBeInstanceOf(HttpException);
-    expect((failure as HttpException).getStatus()).toBe(422);
-    expect((failure as HttpException).getResponse()).toEqual({
-      message: 'invalid playbook',
-    });
-  });
+		expect(failure).toBeInstanceOf(HttpException);
+		expect((failure as HttpException).getStatus()).toBe(422);
+		expect((failure as HttpException).getResponse()).toEqual({
+			message: 'invalid playbook',
+		});
+	});
 
-  it('rethrows an axios error that has no response (network failure) untouched', async () => {
-    const failure = new AxiosError('connect ECONNREFUSED', 'ECONNREFUSED');
-    post.mockReturnValue(throwError(() => failure));
+	it('rethrows an axios error that has no response (network failure) untouched', async () => {
+		const failure = new AxiosError('connect ECONNREFUSED', 'ECONNREFUSED');
+		post.mockReturnValue(throwError(() => failure));
 
-    await expect(connector.createDatabase(body)).rejects.toBe(failure);
-  });
+		await expect(connector.createDatabase(body)).rejects.toBe(failure);
+	});
 
-  it('rethrows a non-axios error untouched', async () => {
-    const failure = new Error('boom');
-    post.mockReturnValue(throwError(() => failure));
+	it('rethrows a non-axios error untouched', async () => {
+		const failure = new Error('boom');
+		post.mockReturnValue(throwError(() => failure));
 
-    await expect(connector.createDatabase(body)).rejects.toBe(failure);
-  });
+		await expect(connector.createDatabase(body)).rejects.toBe(failure);
+	});
 
-  it('propagates a token failure without calling infra-hub-api', async () => {
-    const failure = new Error('login failed');
-    getAccessToken.mockRejectedValue(failure);
+	it('propagates a token failure without calling infra-hub-api', async () => {
+		const failure = new Error('login failed');
+		getAccessToken.mockRejectedValue(failure);
 
-    await expect(connector.createDatabase(body)).rejects.toBe(failure);
-    expect(post).not.toHaveBeenCalled();
-  });
+		await expect(connector.createDatabase(body)).rejects.toBe(failure);
+		expect(post).not.toHaveBeenCalled();
+	});
 });

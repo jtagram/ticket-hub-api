@@ -1,9 +1,4 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
@@ -17,80 +12,77 @@ const INVALID_TOKEN_MESSAGE = 'Invalid or expired token';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  constructor(
-    private readonly jwtService: JwtService,
-    private readonly reflector: Reflector,
-    private readonly jwtPublicKeyService: JwtPublicKeyService,
-    private readonly logger: Logger,
-  ) {}
+	constructor(
+		private readonly jwtService: JwtService,
+		private readonly reflector: Reflector,
+		private readonly jwtPublicKeyService: JwtPublicKeyService,
+		private readonly logger: Logger,
+	) {}
 
-  async canActivate(context: ExecutionContext): Promise<boolean> {
-    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
-    if (isPublic) {
-      return true;
-    }
+	async canActivate(context: ExecutionContext): Promise<boolean> {
+		const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+			context.getHandler(),
+			context.getClass(),
+		]);
+		if (isPublic) {
+			return true;
+		}
 
-    const request = context.switchToHttp().getRequest<Request>();
-    const token = extractBearerToken(request);
-    if (!token) {
-      throw new UnauthorizedException(MISSING_TOKEN_MESSAGE);
-    }
+		const request = context.switchToHttp().getRequest<Request>();
+		const token = extractBearerToken(request);
+		if (!token) {
+			throw new UnauthorizedException(MISSING_TOKEN_MESSAGE);
+		}
 
-    const publicKey = await this.findPublicKey(token);
-    if (!publicKey) {
-      throw new UnauthorizedException(INVALID_TOKEN_MESSAGE);
-    }
+		const publicKey = await this.findPublicKey(token);
+		if (!publicKey) {
+			throw new UnauthorizedException(INVALID_TOKEN_MESSAGE);
+		}
 
-    const payload = await this.verifyToken(token, publicKey);
-    if (!payload) {
-      throw new UnauthorizedException(INVALID_TOKEN_MESSAGE);
-    }
+		const payload = await this.verifyToken(token, publicKey);
+		if (!payload) {
+			throw new UnauthorizedException(INVALID_TOKEN_MESSAGE);
+		}
 
-    (request as Request & { user: AuthenticatedUser }).user = payload;
-    return true;
-  }
+		(request as Request & { user: AuthenticatedUser }).user = payload;
+		return true;
+	}
 
-  private async findPublicKey(token: string): Promise<string | undefined> {
-    const decoded = this.jwtService.decode<{
-      header?: { kid?: string };
-    } | null>(token, { complete: true });
-    const kid = decoded?.header?.kid;
-    return kid ? this.jwtPublicKeyService.getPublicKey(kid) : undefined;
-  }
+	private async findPublicKey(token: string): Promise<string | undefined> {
+		const decoded = this.jwtService.decode<{
+			header?: { kid?: string };
+		} | null>(token, { complete: true });
+		const kid = decoded?.header?.kid;
+		return kid ? this.jwtPublicKeyService.getPublicKey(kid) : undefined;
+	}
 
-  private async verifyToken(
-    token: string,
-    publicKey: string,
-  ): Promise<AuthenticatedUser | null> {
-    try {
-      return await this.jwtService.verifyAsync<AuthenticatedUser>(token, {
-        publicKey,
-        algorithms: ['RS256'],
-      });
-    } catch (error) {
-      // A rejected token is a client problem (401), so it is a warning, like
-      // the 4xx responses logged by the exception filters.
-      this.logger.warn({
-        err: {
-          message: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined,
-        },
-        msg: 'Failed to verify JWT',
-      });
-      return null;
-    }
-  }
+	private async verifyToken(token: string, publicKey: string): Promise<AuthenticatedUser | null> {
+		try {
+			return await this.jwtService.verifyAsync<AuthenticatedUser>(token, {
+				publicKey,
+				algorithms: ['RS256'],
+			});
+		} catch (error) {
+			// A rejected token is a client problem (401), so it is a warning, like
+			// the 4xx responses logged by the exception filters.
+			this.logger.warn({
+				err: {
+					message: error instanceof Error ? error.message : String(error),
+					stack: error instanceof Error ? error.stack : undefined,
+				},
+				msg: 'Failed to verify JWT',
+			});
+			return null;
+		}
+	}
 }
 
 function extractBearerToken(request: Request): string | undefined {
-  const header = request.headers.authorization;
-  if (!header) {
-    return undefined;
-  }
+	const header = request.headers.authorization;
+	if (!header) {
+		return undefined;
+	}
 
-  const [type, token] = header.split(' ');
-  return type === 'Bearer' && token ? token : undefined;
+	const [type, token] = header.split(' ');
+	return type === 'Bearer' && token ? token : undefined;
 }

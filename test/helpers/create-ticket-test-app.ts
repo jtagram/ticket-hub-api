@@ -8,5 +8,5 @@ export type CreateTicketTestApp = TicketTestApp;
  * `createTicketTestApp` for what is real and what is replaced.
  */
 export function createCreateTicketTestApp(): Promise<CreateTicketTestApp> {
-  return createTicketTestApp({ modules: [CreateTicketModule] });
+	return createTicketTestApp({ modules: [CreateTicketModule] });
 }

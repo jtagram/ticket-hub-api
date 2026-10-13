@@ -8,8 +8,8 @@ const NOT_BLANK_PATTERN = /\S/;
  * a 400 by the ValidationPipe instead of a plain Error (500) at build time.
  */
 export function IsNotBlank(validationOptions?: ValidationOptions) {
-  return Matches(NOT_BLANK_PATTERN, {
-    message: '$property must not be blank',
-    ...validationOptions,
-  });
+	return Matches(NOT_BLANK_PATTERN, {
+		message: '$property must not be blank',
+		...validationOptions,
+	});
 }

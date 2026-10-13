@@ -1,9 +1,4 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  ForbiddenException,
-  Injectable,
-} from '@nestjs/common';
+import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
@@ -13,11 +8,9 @@ import { AuthenticatedUser } from '../jwt/authenticated-user';
 import { ROLES_KEY } from './roles.decorator';
 
 const MISSING_USER_MESSAGE =
-  'RolesGuard ran without an authenticated user - JwtAuthGuard must run first';
-const WRONG_APPLICATION_MESSAGE =
-  'This token was not issued for the ticket-hub-api application';
-const MISSING_APPLICATION_MESSAGE =
-  'The token does not carry application information';
+	'RolesGuard ran without an authenticated user - JwtAuthGuard must run first';
+const WRONG_APPLICATION_MESSAGE = 'This token was not issued for the ticket-hub-api application';
+const MISSING_APPLICATION_MESSAGE = 'The token does not carry application information';
 const INSUFFICIENT_ROLE_MESSAGE = 'You do not have the required role';
 
 /**
@@ -30,58 +23,56 @@ const INSUFFICIENT_ROLE_MESSAGE = 'You do not have the required role';
  */
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(
-    private readonly reflector: Reflector,
-    private readonly configService: ConfigService,
-  ) {}
+	constructor(
+		private readonly reflector: Reflector,
+		private readonly configService: ConfigService,
+	) {}
 
-  canActivate(context: ExecutionContext): boolean {
-    const requiredRoles = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+	canActivate(context: ExecutionContext): boolean {
+		const requiredRoles = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, [
+			context.getHandler(),
+			context.getClass(),
+		]);
 
-    if (!requiredRoles || requiredRoles.length === 0) {
-      return true;
-    }
+		if (!requiredRoles || requiredRoles.length === 0) {
+			return true;
+		}
 
-    const request = context
-      .switchToHttp()
-      .getRequest<Request & { user?: AuthenticatedUser }>();
+		const request = context.switchToHttp().getRequest<Request & { user?: AuthenticatedUser }>();
 
-    if (!request.user) {
-      throw new ForbiddenException(MISSING_USER_MESSAGE);
-    }
+		if (!request.user) {
+			throw new ForbiddenException(MISSING_USER_MESSAGE);
+		}
 
-    const ticketHubApiApplicationName = this.configService.get<string>(
-      'TICKET_HUB_API_APPLICATION_NAME',
-    );
-    // The claims come from a verified token but are not otherwise validated,
-    // so a token without `apps`/`application` must be a 403, not a TypeError.
-    const application = request.user.apps?.application;
-    if (!application) {
-      throw new ForbiddenException(MISSING_APPLICATION_MESSAGE);
-    }
+		const ticketHubApiApplicationName = this.configService.get<string>(
+			'TICKET_HUB_API_APPLICATION_NAME',
+		);
+		// The claims come from a verified token but are not otherwise validated,
+		// so a token without `apps`/`application` must be a 403, not a TypeError.
+		const application = request.user.apps?.application;
+		if (!application) {
+			throw new ForbiddenException(MISSING_APPLICATION_MESSAGE);
+		}
 
-    if (application.name !== ticketHubApiApplicationName) {
-      throw new ForbiddenException(WRONG_APPLICATION_MESSAGE);
-    }
+		if (application.name !== ticketHubApiApplicationName) {
+			throw new ForbiddenException(WRONG_APPLICATION_MESSAGE);
+		}
 
-    if (!hasOneOfRoles(application.roles, requiredRoles)) {
-      throw new ForbiddenException(INSUFFICIENT_ROLE_MESSAGE);
-    }
+		if (!hasOneOfRoles(application.roles, requiredRoles)) {
+			throw new ForbiddenException(INSUFFICIENT_ROLE_MESSAGE);
+		}
 
-    return true;
-  }
+		return true;
+	}
 }
 
 function hasOneOfRoles(
-  roles: ApplicationPayload['roles'] | undefined,
-  requiredRoles: Role[],
+	roles: ApplicationPayload['roles'] | undefined,
+	requiredRoles: Role[],
 ): boolean {
-  if (!Array.isArray(roles)) {
-    return false;
-  }
-  const roleNames = roles.map((role) => role?.name);
-  return requiredRoles.some((requiredRole) => roleNames.includes(requiredRole));
+	if (!Array.isArray(roles)) {
+		return false;
+	}
+	const roleNames = roles.map((role) => role?.name);
+	return requiredRoles.some((requiredRole) => roleNames.includes(requiredRole));
 }

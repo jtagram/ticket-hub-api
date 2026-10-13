@@ -5,8 +5,8 @@ import { SearchForValueListsController } from './search-for-value-lists.controll
 import { SearchForValueListsService } from './search-for-value-lists.service';
 
 @Module({
-  imports: [IamApiModule, InfraHubApiModule],
-  controllers: [SearchForValueListsController],
-  providers: [SearchForValueListsService],
+	imports: [IamApiModule, InfraHubApiModule],
+	controllers: [SearchForValueListsController],
+	providers: [SearchForValueListsService],
 })
 export class SearchForValueListsModule {}

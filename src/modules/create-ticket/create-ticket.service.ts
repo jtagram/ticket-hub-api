@@ -22,46 +22,46 @@ import { KubectlCommandTicketMapper } from './mapper/kubectl-command-ticket.mapp
 
 @Injectable()
 export class CreateTicketService {
-  constructor(
-    private readonly databaseManagementTicketsRepository: DatabaseManagementTicketsRepository,
-    private readonly databaseProvisioningTicketsRepository: DatabaseProvisioningTicketsRepository,
-    private readonly serverManagementTicketsRepository: ServerManagementTicketsRepository,
-    private readonly kubernetesManifestTicketsRepository: KubernetesManifestTicketsRepository,
-    private readonly kubectlCommandTicketsRepository: KubectlCommandTicketsRepository,
-  ) {}
+	constructor(
+		private readonly databaseManagementTicketsRepository: DatabaseManagementTicketsRepository,
+		private readonly databaseProvisioningTicketsRepository: DatabaseProvisioningTicketsRepository,
+		private readonly serverManagementTicketsRepository: ServerManagementTicketsRepository,
+		private readonly kubernetesManifestTicketsRepository: KubernetesManifestTicketsRepository,
+		private readonly kubectlCommandTicketsRepository: KubectlCommandTicketsRepository,
+	) {}
 
-  async createDatabaseManagementTicket(
-    dto: CreateDatabaseManagementTicketDto,
-  ): Promise<DatabaseManagementTicketEntity> {
-    const ticket = DatabaseManagementTicketMapper.toEntity(dto);
-    return this.databaseManagementTicketsRepository.create(ticket);
-  }
+	async createDatabaseManagementTicket(
+		dto: CreateDatabaseManagementTicketDto,
+	): Promise<DatabaseManagementTicketEntity> {
+		const ticket = DatabaseManagementTicketMapper.toEntity(dto);
+		return this.databaseManagementTicketsRepository.create(ticket);
+	}
 
-  async createDatabaseProvisioningTicket(
-    dto: CreateDatabaseProvisioningTicketDto,
-  ): Promise<DatabaseProvisioningTicketEntity> {
-    const ticket = DatabaseProvisioningTicketMapper.toEntity(dto);
-    return this.databaseProvisioningTicketsRepository.create(ticket);
-  }
+	async createDatabaseProvisioningTicket(
+		dto: CreateDatabaseProvisioningTicketDto,
+	): Promise<DatabaseProvisioningTicketEntity> {
+		const ticket = DatabaseProvisioningTicketMapper.toEntity(dto);
+		return this.databaseProvisioningTicketsRepository.create(ticket);
+	}
 
-  async createServerManagementTicket(
-    dto: CreateServerManagementTicketDto,
-  ): Promise<ServerManagementTicketEntity> {
-    const ticket = ServerManagementTicketMapper.toEntity(dto);
-    return this.serverManagementTicketsRepository.create(ticket);
-  }
+	async createServerManagementTicket(
+		dto: CreateServerManagementTicketDto,
+	): Promise<ServerManagementTicketEntity> {
+		const ticket = ServerManagementTicketMapper.toEntity(dto);
+		return this.serverManagementTicketsRepository.create(ticket);
+	}
 
-  async createKubernetesManifestTicket(
-    dto: CreateKubernetesManifestTicketDto,
-  ): Promise<KubernetesManifestTicketEntity> {
-    const ticket = KubernetesManifestTicketMapper.toEntity(dto);
-    return this.kubernetesManifestTicketsRepository.create(ticket);
-  }
+	async createKubernetesManifestTicket(
+		dto: CreateKubernetesManifestTicketDto,
+	): Promise<KubernetesManifestTicketEntity> {
+		const ticket = KubernetesManifestTicketMapper.toEntity(dto);
+		return this.kubernetesManifestTicketsRepository.create(ticket);
+	}
 
-  async createKubectlCommandTicket(
-    dto: CreateKubectlCommandTicketDto,
-  ): Promise<KubectlCommandTicketEntity> {
-    const ticket = KubectlCommandTicketMapper.toEntity(dto);
-    return this.kubectlCommandTicketsRepository.create(ticket);
-  }
+	async createKubectlCommandTicket(
+		dto: CreateKubectlCommandTicketDto,
+	): Promise<KubectlCommandTicketEntity> {
+		const ticket = KubectlCommandTicketMapper.toEntity(dto);
+		return this.kubectlCommandTicketsRepository.create(ticket);
+	}
 }

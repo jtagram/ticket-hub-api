@@ -23,28 +23,28 @@ import { UpdateTicketModule } from './modules/update-ticket/update-ticket.module
 const jwtModule = JwtModule.register({});
 
 @Module({
-  imports: [
-    EnvModule,
-    LoggerModule,
-    ScheduleModule.forRoot(),
-    DatabaseModule,
-    FilterModule,
-    jwtModule,
-    JwtPublicKeyModule,
-    AppUserAuthModule,
-    HealthModule,
-    InfraHubApiModule,
-    IamApiModule,
-    SearchForValueListsModule,
-    CreateTicketModule,
-    SearchTicketModule,
-    UpdateTicketModule,
-  ],
-  controllers: [AppController],
-  providers: [
-    AppService,
-    { provide: APP_GUARD, useClass: JwtAuthGuard },
-    { provide: APP_GUARD, useClass: RolesGuard },
-  ],
+	imports: [
+		EnvModule,
+		LoggerModule,
+		ScheduleModule.forRoot(),
+		DatabaseModule,
+		FilterModule,
+		jwtModule,
+		JwtPublicKeyModule,
+		AppUserAuthModule,
+		HealthModule,
+		InfraHubApiModule,
+		IamApiModule,
+		SearchForValueListsModule,
+		CreateTicketModule,
+		SearchTicketModule,
+		UpdateTicketModule,
+	],
+	controllers: [AppController],
+	providers: [
+		AppService,
+		{ provide: APP_GUARD, useClass: JwtAuthGuard },
+		{ provide: APP_GUARD, useClass: RolesGuard },
+	],
 })
 export class AppModule {}

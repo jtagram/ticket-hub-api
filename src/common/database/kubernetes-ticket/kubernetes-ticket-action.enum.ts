@@ -1,5 +1,5 @@
 export enum KubernetesTicketAction {
-  APPLY = 'apply',
-  DELETE = 'delete',
-  CREATE = 'create',
+	APPLY = 'apply',
+	DELETE = 'delete',
+	CREATE = 'create',
 }

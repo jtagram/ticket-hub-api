@@ -6,43 +6,37 @@ import { ServerManagementTicketEntity } from './server-management-ticket.entity'
 
 @Injectable()
 export class ServerManagementTicketsRepository {
-  constructor(
-    @InjectRepository(ServerManagementTicketEntity)
-    private readonly repository: Repository<ServerManagementTicketEntity>,
-  ) {}
+	constructor(
+		@InjectRepository(ServerManagementTicketEntity)
+		private readonly repository: Repository<ServerManagementTicketEntity>,
+	) {}
 
-  async create(
-    ticket: ServerManagementTicketEntity,
-  ): Promise<ServerManagementTicketEntity> {
-    return this.repository.save(ticket);
-  }
+	async create(ticket: ServerManagementTicketEntity): Promise<ServerManagementTicketEntity> {
+		return this.repository.save(ticket);
+	}
 
-  async update(
-    ticket: ServerManagementTicketEntity,
-  ): Promise<ServerManagementTicketEntity> {
-    return this.repository.save(ticket);
-  }
+	async update(ticket: ServerManagementTicketEntity): Promise<ServerManagementTicketEntity> {
+		return this.repository.save(ticket);
+	}
 
-  /**
-   * Atomically moves the ticket from OPEN to IN_PROGRESS with a single
-   * conditional UPDATE. Returns true only for the caller that won the claim;
-   * false means the ticket does not exist or is no longer OPEN.
-   */
-  async claimForApproval(number: number): Promise<boolean> {
-    const result = await this.repository.update(
-      { number, status: TicketStatus.OPEN },
-      { status: TicketStatus.IN_PROGRESS },
-    );
-    return (result.affected ?? 0) > 0;
-  }
+	/**
+	 * Atomically moves the ticket from OPEN to IN_PROGRESS with a single
+	 * conditional UPDATE. Returns true only for the caller that won the claim;
+	 * false means the ticket does not exist or is no longer OPEN.
+	 */
+	async claimForApproval(number: number): Promise<boolean> {
+		const result = await this.repository.update(
+			{ number, status: TicketStatus.OPEN },
+			{ status: TicketStatus.IN_PROGRESS },
+		);
+		return (result.affected ?? 0) > 0;
+	}
 
-  async findAll(): Promise<ServerManagementTicketEntity[]> {
-    return this.repository.find({ order: { number: 'ASC' } });
-  }
+	async findAll(): Promise<ServerManagementTicketEntity[]> {
+		return this.repository.find({ order: { number: 'ASC' } });
+	}
 
-  async findByNumber(
-    number: number,
-  ): Promise<ServerManagementTicketEntity | null> {
-    return this.repository.findOneBy({ number });
-  }
+	async findByNumber(number: number): Promise<ServerManagementTicketEntity | null> {
+		return this.repository.findOneBy({ number });
+	}
 }

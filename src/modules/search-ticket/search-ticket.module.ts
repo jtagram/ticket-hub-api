@@ -3,7 +3,7 @@ import { SearchTicketController } from './search-ticket.controller';
 import { SearchTicketService } from './search-ticket.service';
 
 @Module({
-  controllers: [SearchTicketController],
-  providers: [SearchTicketService],
+	controllers: [SearchTicketController],
+	providers: [SearchTicketService],
 })
 export class SearchTicketModule {}

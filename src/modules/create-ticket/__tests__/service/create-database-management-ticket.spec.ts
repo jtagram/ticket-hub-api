@@ -10,101 +10,92 @@ import { CreateTicketService } from '../../create-ticket.service';
 // @nestjs/typeorm is ESM-only and Jest runs as CommonJS. The service is built
 // by hand below, so the injection decorator can be a no-op.
 jest.mock('@nestjs/typeorm', () => ({
-  InjectRepository: () => () => undefined,
+	InjectRepository: () => () => undefined,
 }));
 
 type RepositoryMock = {
-  create: jest.Mock<(ticket: unknown) => Promise<unknown>>;
+	create: jest.Mock<(ticket: unknown) => Promise<unknown>>;
 };
 
 const dto = {
-  informer: 'informer@example.com',
-  assignee: 'assignee@example.com',
-  department: 'INFRA',
-  subject: 'Subject',
-  description: 'Description',
-  dbNamespace: 'databases',
-  dbDeployment: 'postgres',
-  dbName: 'orders',
-  sqlCode: 'SELECT 1;',
+	informer: 'informer@example.com',
+	assignee: 'assignee@example.com',
+	department: 'INFRA',
+	subject: 'Subject',
+	description: 'Description',
+	dbNamespace: 'databases',
+	dbDeployment: 'postgres',
+	dbName: 'orders',
+	sqlCode: 'SELECT 1;',
 };
 
 describe('CreateTicketService.createDatabaseManagementTicket', () => {
-  let target: RepositoryMock;
-  let others: RepositoryMock[];
-  let service: CreateTicketService;
+	let target: RepositoryMock;
+	let others: RepositoryMock[];
+	let service: CreateTicketService;
 
-  beforeEach(() => {
-    const buildRepository = (): RepositoryMock => ({
-      create: jest.fn<(ticket: unknown) => Promise<unknown>>(),
-    });
-    target = buildRepository();
-    const databaseProvisioning = buildRepository();
-    const serverManagement = buildRepository();
-    const kubernetesManifest = buildRepository();
-    const kubectlCommand = buildRepository();
-    others = [
-      databaseProvisioning,
-      serverManagement,
-      kubernetesManifest,
-      kubectlCommand,
-    ];
-    service = new CreateTicketService(
-      target as unknown as DatabaseManagementTicketsRepository,
-      databaseProvisioning as unknown as DatabaseProvisioningTicketsRepository,
-      serverManagement as unknown as ServerManagementTicketsRepository,
-      kubernetesManifest as unknown as KubernetesManifestTicketsRepository,
-      kubectlCommand as unknown as KubectlCommandTicketsRepository,
-    );
-  });
+	beforeEach(() => {
+		const buildRepository = (): RepositoryMock => ({
+			create: jest.fn<(ticket: unknown) => Promise<unknown>>(),
+		});
+		target = buildRepository();
+		const databaseProvisioning = buildRepository();
+		const serverManagement = buildRepository();
+		const kubernetesManifest = buildRepository();
+		const kubectlCommand = buildRepository();
+		others = [databaseProvisioning, serverManagement, kubernetesManifest, kubectlCommand];
+		service = new CreateTicketService(
+			target as unknown as DatabaseManagementTicketsRepository,
+			databaseProvisioning as unknown as DatabaseProvisioningTicketsRepository,
+			serverManagement as unknown as ServerManagementTicketsRepository,
+			kubernetesManifest as unknown as KubernetesManifestTicketsRepository,
+			kubectlCommand as unknown as KubectlCommandTicketsRepository,
+		);
+	});
 
-  it('maps the dto to an OPEN entity and passes it to the matching repository', async () => {
-    target.create.mockResolvedValue({ id: 1, number: 10 });
+	it('maps the dto to an OPEN entity and passes it to the matching repository', async () => {
+		target.create.mockResolvedValue({ id: 1, number: 10 });
 
-    await service.createDatabaseManagementTicket(dto);
+		await service.createDatabaseManagementTicket(dto);
 
-    expect(target.create).toHaveBeenCalledTimes(1);
-    expect(target.create.mock.calls[0][0]).toMatchObject({
-      ...dto,
-      status: TicketStatus.OPEN,
-      response: '',
-    });
-  });
+		expect(target.create).toHaveBeenCalledTimes(1);
+		expect(target.create.mock.calls[0][0]).toMatchObject({
+			...dto,
+			status: TicketStatus.OPEN,
+			response: '',
+		});
+	});
 
-  it('does not use any other repository', async () => {
-    target.create.mockResolvedValue({});
+	it('does not use any other repository', async () => {
+		target.create.mockResolvedValue({});
 
-    await service.createDatabaseManagementTicket(dto);
+		await service.createDatabaseManagementTicket(dto);
 
-    others.forEach((mock) => expect(mock.create).not.toHaveBeenCalled());
-  });
+		others.forEach((mock) => expect(mock.create).not.toHaveBeenCalled());
+	});
 
-  it('returns the repository result', async () => {
-    const saved = { id: 1, number: 10 };
-    target.create.mockResolvedValue(saved);
+	it('returns the repository result', async () => {
+		const saved = { id: 1, number: 10 };
+		target.create.mockResolvedValue(saved);
 
-    await expect(
-      service.createDatabaseManagementTicket(dto),
-    ).resolves.toBe(saved);
-  });
+		await expect(service.createDatabaseManagementTicket(dto)).resolves.toBe(saved);
+	});
 
-  it('propagates the mapper error without calling the repository for a whitespace-only sqlCode', async () => {
-    await expect(
-      service.createDatabaseManagementTicket({
-        ...dto,
-        sqlCode: '   ',
-      }),
-    ).rejects.toThrow('missing required field "sqlCode"');
+	it('propagates the mapper error without calling the repository for a whitespace-only sqlCode', async () => {
+		await expect(
+			service.createDatabaseManagementTicket({
+				...dto,
+				sqlCode: '   ',
+			}),
+		).rejects.toThrow('missing required field "sqlCode"');
 
-    expect(target.create).not.toHaveBeenCalled();
-  });
+		expect(target.create).not.toHaveBeenCalled();
+	});
 
-  it('propagates a repository rejection', async () => {
-    const failure = new Error('database unavailable');
-    target.create.mockRejectedValue(failure);
+	it('propagates a repository rejection', async () => {
+		const failure = new Error('database unavailable');
+		target.create.mockRejectedValue(failure);
 
-    await expect(
-      service.createDatabaseManagementTicket(dto),
-    ).rejects.toBe(failure);
-  });
+		await expect(service.createDatabaseManagementTicket(dto)).rejects.toBe(failure);
+	});
 });

@@ -11,85 +11,72 @@ import { CreateKubernetesManifestTicketDto } from './dto/create-kubernetes-manif
 import { CreateKubectlCommandTicketDto } from './dto/create-kubectl-command-ticket.dto';
 import { ApiTags } from '@nestjs/swagger';
 import {
-  ApiCreateDatabaseManagementTicket,
-  ApiCreateDatabaseProvisioningTicket,
-  ApiCreateServerManagementTicket,
-  ApiCreateKubernetesManifestTicket,
-  ApiCreateKubectlCommandTicket,
+	ApiCreateDatabaseManagementTicket,
+	ApiCreateDatabaseProvisioningTicket,
+	ApiCreateServerManagementTicket,
+	ApiCreateKubernetesManifestTicket,
+	ApiCreateKubectlCommandTicket,
 } from './swagger/create-ticket.swagger';
 
 @Controller('tickets')
 @ApiTags('Create ticket')
 export class CreateTicketController {
-  constructor(private readonly createTicketService: CreateTicketService) {}
+	constructor(private readonly createTicketService: CreateTicketService) {}
 
-  @ApiCreateDatabaseManagementTicket()
-  @Post('database/management')
-  @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.DATABASE, Role.DATABASE_APPROVER)
-  createDatabaseManagementTicket(
-    @Body() dto: CreateDatabaseManagementTicketDto,
-    @Req() request: Request,
-  ) {
-    dto.informer = (
-      request as Request & { user: AuthenticatedUser }
-    ).user.email;
-    return this.createTicketService.createDatabaseManagementTicket(dto);
-  }
+	@ApiCreateDatabaseManagementTicket()
+	@Post('database/management')
+	@HttpCode(HttpStatus.CREATED)
+	@Roles(Role.ADMIN, Role.DATABASE, Role.DATABASE_APPROVER)
+	createDatabaseManagementTicket(
+		@Body() dto: CreateDatabaseManagementTicketDto,
+		@Req() request: Request,
+	) {
+		dto.informer = (request as Request & { user: AuthenticatedUser }).user.email;
+		return this.createTicketService.createDatabaseManagementTicket(dto);
+	}
 
-  @ApiCreateDatabaseProvisioningTicket()
-  @Post('database/provisioning')
-  @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.DATABASE, Role.DATABASE_APPROVER)
-  createDatabaseProvisioningTicket(
-    @Body() dto: CreateDatabaseProvisioningTicketDto,
-    @Req() request: Request,
-  ) {
-    dto.informer = (
-      request as Request & { user: AuthenticatedUser }
-    ).user.email;
-    return this.createTicketService.createDatabaseProvisioningTicket(dto);
-  }
+	@ApiCreateDatabaseProvisioningTicket()
+	@Post('database/provisioning')
+	@HttpCode(HttpStatus.CREATED)
+	@Roles(Role.ADMIN, Role.DATABASE, Role.DATABASE_APPROVER)
+	createDatabaseProvisioningTicket(
+		@Body() dto: CreateDatabaseProvisioningTicketDto,
+		@Req() request: Request,
+	) {
+		dto.informer = (request as Request & { user: AuthenticatedUser }).user.email;
+		return this.createTicketService.createDatabaseProvisioningTicket(dto);
+	}
 
-  @ApiCreateServerManagementTicket()
-  @Post('server/management')
-  @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.SERVER, Role.SERVER_APPROVER)
-  createServerManagementTicket(
-    @Body() dto: CreateServerManagementTicketDto,
-    @Req() request: Request,
-  ) {
-    dto.informer = (
-      request as Request & { user: AuthenticatedUser }
-    ).user.email;
-    return this.createTicketService.createServerManagementTicket(dto);
-  }
+	@ApiCreateServerManagementTicket()
+	@Post('server/management')
+	@HttpCode(HttpStatus.CREATED)
+	@Roles(Role.ADMIN, Role.SERVER, Role.SERVER_APPROVER)
+	createServerManagementTicket(
+		@Body() dto: CreateServerManagementTicketDto,
+		@Req() request: Request,
+	) {
+		dto.informer = (request as Request & { user: AuthenticatedUser }).user.email;
+		return this.createTicketService.createServerManagementTicket(dto);
+	}
 
-  @ApiCreateKubernetesManifestTicket()
-  @Post('kubernetes/manifest')
-  @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.KUBERNATES, Role.KUBERNATES_APPROVER)
-  createKubernetesManifestTicket(
-    @Body() dto: CreateKubernetesManifestTicketDto,
-    @Req() request: Request,
-  ) {
-    dto.informer = (
-      request as Request & { user: AuthenticatedUser }
-    ).user.email;
-    return this.createTicketService.createKubernetesManifestTicket(dto);
-  }
+	@ApiCreateKubernetesManifestTicket()
+	@Post('kubernetes/manifest')
+	@HttpCode(HttpStatus.CREATED)
+	@Roles(Role.ADMIN, Role.KUBERNATES, Role.KUBERNATES_APPROVER)
+	createKubernetesManifestTicket(
+		@Body() dto: CreateKubernetesManifestTicketDto,
+		@Req() request: Request,
+	) {
+		dto.informer = (request as Request & { user: AuthenticatedUser }).user.email;
+		return this.createTicketService.createKubernetesManifestTicket(dto);
+	}
 
-  @ApiCreateKubectlCommandTicket()
-  @Post('kubernetes/kubectl')
-  @HttpCode(HttpStatus.CREATED)
-  @Roles(Role.ADMIN, Role.KUBERNATES, Role.KUBERNATES_APPROVER)
-  createKubectlCommandTicket(
-    @Body() dto: CreateKubectlCommandTicketDto,
-    @Req() request: Request,
-  ) {
-    dto.informer = (
-      request as Request & { user: AuthenticatedUser }
-    ).user.email;
-    return this.createTicketService.createKubectlCommandTicket(dto);
-  }
+	@ApiCreateKubectlCommandTicket()
+	@Post('kubernetes/kubectl')
+	@HttpCode(HttpStatus.CREATED)
+	@Roles(Role.ADMIN, Role.KUBERNATES, Role.KUBERNATES_APPROVER)
+	createKubectlCommandTicket(@Body() dto: CreateKubectlCommandTicketDto, @Req() request: Request) {
+		dto.informer = (request as Request & { user: AuthenticatedUser }).user.email;
+		return this.createTicketService.createKubectlCommandTicket(dto);
+	}
 }

@@ -1,89 +1,74 @@
 import { plainToInstance } from 'class-transformer';
-import {
-  IsIn,
-  IsNotEmpty,
-  IsNumberString,
-  IsString,
-  validateSync,
-} from 'class-validator';
+import { IsIn, IsNotEmpty, IsNumberString, IsString, validateSync } from 'class-validator';
 
-const PINO_LOG_LEVELS = [
-  'trace',
-  'debug',
-  'info',
-  'warn',
-  'error',
-  'fatal',
-] as const;
+const PINO_LOG_LEVELS = ['trace', 'debug', 'info', 'warn', 'error', 'fatal'] as const;
 
 export class EnvironmentVariables {
-  @IsNumberString()
-  PORT!: string;
+	@IsNumberString()
+	PORT!: string;
 
-  @IsIn(PINO_LOG_LEVELS)
-  LOG_LEVEL!: string;
+	@IsIn(PINO_LOG_LEVELS)
+	LOG_LEVEL!: string;
 
-  @IsString()
-  @IsNotEmpty()
-  POSTGRES_USER!: string;
+	@IsString()
+	@IsNotEmpty()
+	POSTGRES_USER!: string;
 
-  @IsString()
-  @IsNotEmpty()
-  POSTGRES_PASSWORD!: string;
+	@IsString()
+	@IsNotEmpty()
+	POSTGRES_PASSWORD!: string;
 
-  @IsString()
-  @IsNotEmpty()
-  DATABASE_HOST!: string;
+	@IsString()
+	@IsNotEmpty()
+	DATABASE_HOST!: string;
 
-  @IsNumberString()
-  DATABASE_PORT!: string;
+	@IsNumberString()
+	DATABASE_PORT!: string;
 
-  @IsString()
-  @IsNotEmpty()
-  DATABASE_NAME!: string;
+	@IsString()
+	@IsNotEmpty()
+	DATABASE_NAME!: string;
 
-  @IsString()
-  @IsNotEmpty()
-  INFRA_HUB_API_URL!: string;
+	@IsString()
+	@IsNotEmpty()
+	INFRA_HUB_API_URL!: string;
 
-  @IsString()
-  @IsNotEmpty()
-  IAM_API_URL!: string;
+	@IsString()
+	@IsNotEmpty()
+	IAM_API_URL!: string;
 
-  @IsString()
-  @IsNotEmpty()
-  TICKET_HUB_API_APPLICATION_NAME!: string;
+	@IsString()
+	@IsNotEmpty()
+	TICKET_HUB_API_APPLICATION_NAME!: string;
 
-  @IsString()
-  @IsNotEmpty()
-  IAM_API_APPLICATION_NAME!: string;
+	@IsString()
+	@IsNotEmpty()
+	IAM_API_APPLICATION_NAME!: string;
 
-  @IsString()
-  @IsNotEmpty()
-  INFRA_HUB_API_APPLICATION_NAME!: string;
+	@IsString()
+	@IsNotEmpty()
+	INFRA_HUB_API_APPLICATION_NAME!: string;
 
-  @IsString()
-  @IsNotEmpty()
-  TICKET_HUB_API_SERVICE_CLIENT_ID!: string;
+	@IsString()
+	@IsNotEmpty()
+	TICKET_HUB_API_SERVICE_CLIENT_ID!: string;
 
-  @IsString()
-  @IsNotEmpty()
-  TICKET_HUB_API_SERVICE_CLIENT_SECRET!: string;
+	@IsString()
+	@IsNotEmpty()
+	TICKET_HUB_API_SERVICE_CLIENT_SECRET!: string;
 }
 
-export function validate(
-  config: Record<string, unknown>,
-): EnvironmentVariables {
-  const validatedConfig = plainToInstance(EnvironmentVariables, config);
+export function validate(config: Record<string, unknown>): EnvironmentVariables {
+	const validatedConfig = plainToInstance(EnvironmentVariables, config);
 
-  const errors = validateSync(validatedConfig, {
-    skipMissingProperties: false,
-  });
+	const errors = validateSync(validatedConfig, {
+		skipMissingProperties: false,
+	});
 
-  if (errors.length > 0) {
-    const invalid = errors.map((error) => error.property).join(', ');
-    throw new Error(`Missing required environment variable(s): ${invalid}`);
-  }
+	if (errors.length > 0) {
+		const invalid = errors.map((error) => error.property).join(', ');
+		throw new Error(`Missing required environment variable(s): ${invalid}`);
+	}
 
-  return validatedConfig;
+	return validatedConfig;
 }

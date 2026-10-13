@@ -4,15 +4,12 @@ import { InternalUserResponse } from './iam-api.types';
 
 @Injectable()
 export class IamApiService {
-  constructor(private readonly iamApiConnector: IamApiConnector) {}
+	constructor(private readonly iamApiConnector: IamApiConnector) {}
 
-  async findInternalUsersByRole(
-    applicationName: string,
-    roles: string[],
-  ): Promise<InternalUserResponse[]> {
-    return this.iamApiConnector.findInternalUsersByRole(
-      applicationName,
-      roles,
-    );
-  }
+	async findInternalUsersByRole(
+		applicationName: string,
+		roles: string[],
+	): Promise<InternalUserResponse[]> {
+		return this.iamApiConnector.findInternalUsersByRole(applicationName, roles);
+	}
 }

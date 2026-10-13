@@ -4,8 +4,8 @@ import { UpdateTicketController } from './update-ticket.controller';
 import { UpdateTicketService } from './update-ticket.service';
 
 @Module({
-  imports: [InfraHubApiModule],
-  controllers: [UpdateTicketController],
-  providers: [UpdateTicketService],
+	imports: [InfraHubApiModule],
+	controllers: [UpdateTicketController],
+	providers: [UpdateTicketService],
 })
 export class UpdateTicketModule {}

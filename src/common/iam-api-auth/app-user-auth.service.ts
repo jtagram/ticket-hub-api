@@ -5,19 +5,19 @@ import { firstValueFrom } from 'rxjs';
 
 /** Shape of iam-api's `POST /apps-users/login` response. */
 interface AppUserLoginResponse {
-  access_token: string;
+	access_token: string;
 }
 
 /** Minimal shape of a decoded JWT payload -- only what we need here. */
 interface DecodedJwtPayload {
-  exp: number;
+	exp: number;
 }
 
 const EXPIRATION_SAFETY_MARGIN_MS = 60 * 1000;
 
 interface CachedToken {
-  accessToken: string;
-  expiresAtMs: number;
+	accessToken: string;
+	expiresAtMs: number;
 }
 
 /**
@@ -38,120 +38,108 @@ interface CachedToken {
  */
 @Injectable()
 export class AppUserAuthService {
-  private readonly cachedTokensByApplicationName = new Map<
-    string,
-    CachedToken
-  >();
+	private readonly cachedTokensByApplicationName = new Map<string, CachedToken>();
 
-  /** Logins in progress, so concurrent callers for one application share one. */
-  private readonly inFlightLoginsByApplicationName = new Map<
-    string,
-    Promise<string>
-  >();
+	/** Logins in progress, so concurrent callers for one application share one. */
+	private readonly inFlightLoginsByApplicationName = new Map<string, Promise<string>>();
 
-  constructor(
-    private readonly httpService: HttpService,
-    private readonly configService: ConfigService,
-  ) {}
+	constructor(
+		private readonly httpService: HttpService,
+		private readonly configService: ConfigService,
+	) {}
 
-  async getAccessToken(targetApplicationName: string): Promise<string> {
-    const cached = this.cachedTokensByApplicationName.get(
-      targetApplicationName,
-    );
-    if (cached && this.isStillValid(cached)) {
-      return cached.accessToken;
-    }
+	async getAccessToken(targetApplicationName: string): Promise<string> {
+		const cached = this.cachedTokensByApplicationName.get(targetApplicationName);
+		if (cached && this.isStillValid(cached)) {
+			return cached.accessToken;
+		}
 
-    const inFlight = this.inFlightLoginsByApplicationName.get(
-      targetApplicationName,
-    );
-    if (inFlight) {
-      return inFlight;
-    }
+		const inFlight = this.inFlightLoginsByApplicationName.get(targetApplicationName);
+		if (inFlight) {
+			return inFlight;
+		}
 
-    // The entry is removed as soon as the login settles (success or failure),
-    // so a failure is shared by the callers waiting on it but never cached.
-    const login = this.loginAndCache(targetApplicationName).finally(() => {
-      this.inFlightLoginsByApplicationName.delete(targetApplicationName);
-    });
-    this.inFlightLoginsByApplicationName.set(targetApplicationName, login);
-    return login;
-  }
+		// The entry is removed as soon as the login settles (success or failure),
+		// so a failure is shared by the callers waiting on it but never cached.
+		const login = this.loginAndCache(targetApplicationName).finally(() => {
+			this.inFlightLoginsByApplicationName.delete(targetApplicationName);
+		});
+		this.inFlightLoginsByApplicationName.set(targetApplicationName, login);
+		return login;
+	}
 
-  private async loginAndCache(targetApplicationName: string): Promise<string> {
-    const accessToken = await this.login(targetApplicationName);
-    this.cachedTokensByApplicationName.set(targetApplicationName, {
-      accessToken,
-      expiresAtMs: decodeJwtExpirationMs(accessToken),
-    });
-    return accessToken;
-  }
+	private async loginAndCache(targetApplicationName: string): Promise<string> {
+		const accessToken = await this.login(targetApplicationName);
+		this.cachedTokensByApplicationName.set(targetApplicationName, {
+			accessToken,
+			expiresAtMs: decodeJwtExpirationMs(accessToken),
+		});
+		return accessToken;
+	}
 
-  private isStillValid(cached: CachedToken): boolean {
-    return Date.now() < cached.expiresAtMs - EXPIRATION_SAFETY_MARGIN_MS;
-  }
+	private isStillValid(cached: CachedToken): boolean {
+		return Date.now() < cached.expiresAtMs - EXPIRATION_SAFETY_MARGIN_MS;
+	}
 
-  private get iamApiUrl(): string {
-    return this.configService.get<string>('IAM_API_URL')!;
-  }
+	private get iamApiUrl(): string {
+		return this.configService.get<string>('IAM_API_URL')!;
+	}
 
-  private get originApplicationName(): string {
-    return this.configService.get<string>('TICKET_HUB_API_APPLICATION_NAME')!;
-  }
+	private get originApplicationName(): string {
+		return this.configService.get<string>('TICKET_HUB_API_APPLICATION_NAME')!;
+	}
 
-  private get serviceClientId(): string {
-    return this.configService.get<string>('TICKET_HUB_API_SERVICE_CLIENT_ID')!;
-  }
+	private get serviceClientId(): string {
+		return this.configService.get<string>('TICKET_HUB_API_SERVICE_CLIENT_ID')!;
+	}
 
-  private get serviceClientSecret(): string {
-    return this.configService.get<string>(
-      'TICKET_HUB_API_SERVICE_CLIENT_SECRET',
-    )!;
-  }
+	private get serviceClientSecret(): string {
+		return this.configService.get<string>('TICKET_HUB_API_SERVICE_CLIENT_SECRET')!;
+	}
 
-  private async login(targetApplicationName: string): Promise<string> {
-    const response = await firstValueFrom(
-      this.httpService.post<AppUserLoginResponse>(
-        `${this.iamApiUrl}/apps-users/login`,
-        {
-          clienteId: this.serviceClientId,
-          clienteSecret: this.serviceClientSecret,
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'x-origin-application': this.originApplicationName,
-            'x-target-application': targetApplicationName,
-          },
-        },
-      ),
-    );
+	private async login(targetApplicationName: string): Promise<string> {
+		const response = await firstValueFrom(
+			this.httpService.post<AppUserLoginResponse>(
+				`${this.iamApiUrl}/apps-users/login`,
+				{
+					clienteId: this.serviceClientId,
+					clienteSecret: this.serviceClientSecret,
+				},
+				{
+					headers: {
+						'Content-Type': 'application/json',
+						'x-origin-application': this.originApplicationName,
+						'x-target-application': targetApplicationName,
+					},
+				},
+			),
+		);
 
-    const accessToken = response.data?.access_token;
-    if (typeof accessToken !== 'string' || accessToken.trim().length === 0) {
-      throw new Error(
-        `Failed to log in against iam-api as the ticket-hub-api service app-user for application "${targetApplicationName}": missing or empty "access_token" field`,
-      );
-    }
+		const accessToken = response.data?.access_token;
+		if (typeof accessToken !== 'string' || accessToken.trim().length === 0) {
+			throw new Error(
+				`Failed to log in against iam-api as the ticket-hub-api service app-user for application "${targetApplicationName}": missing or empty "access_token" field`,
+			);
+		}
 
-    return accessToken;
-  }
+		return accessToken;
+	}
 }
 
 function decodeJwtExpirationMs(token: string): number {
-  const parts = token.split('.');
-  const payloadPart = parts[1];
-  if (!payloadPart) {
-    throw new Error('Failed to decode JWT: malformed token');
-  }
+	const parts = token.split('.');
+	const payloadPart = parts[1];
+	if (!payloadPart) {
+		throw new Error('Failed to decode JWT: malformed token');
+	}
 
-  const payload = JSON.parse(
-    Buffer.from(payloadPart, 'base64url').toString('utf8'),
-  ) as Partial<DecodedJwtPayload>;
+	const payload = JSON.parse(
+		Buffer.from(payloadPart, 'base64url').toString('utf8'),
+	) as Partial<DecodedJwtPayload>;
 
-  if (typeof payload.exp !== 'number') {
-    throw new Error('Failed to decode JWT: missing "exp" claim');
-  }
+	if (typeof payload.exp !== 'number') {
+		throw new Error('Failed to decode JWT: missing "exp" claim');
+	}
 
-  return payload.exp * 1000;
+	return payload.exp * 1000;
 }

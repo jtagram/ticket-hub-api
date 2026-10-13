@@ -4,8 +4,8 @@ import { IamApiConnector } from './iam-api.connector';
 import { IamApiService } from './iam-api.service';
 
 @Module({
-  imports: [HttpModule],
-  providers: [IamApiConnector, IamApiService],
-  exports: [IamApiService],
+	imports: [HttpModule],
+	providers: [IamApiConnector, IamApiService],
+	exports: [IamApiService],
 })
 export class IamApiModule {}

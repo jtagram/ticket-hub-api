@@ -1,23 +1,13 @@
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-} from '@jest/globals';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from '@jest/globals';
 import request from 'supertest';
 import { DatabaseProvisioningTicketEntity } from '../../src/common/database/database-provisioning-ticket/database-provisioning-ticket.entity';
 import { TicketStatus } from '../../src/common/database/ticket-status.enum';
 import { Role } from '../../src/common/roles/role.enum';
 import { SearchTicketModule } from '../../src/modules/search-ticket/search-ticket.module';
+import { authorizationHeaderFor, authorizationHeaderForClaims } from '../helpers/test-auth';
 import {
-  authorizationHeaderFor,
-  authorizationHeaderForClaims,
-} from '../helpers/test-auth';
-import {
-  seedDatabaseProvisioningTicket,
-  seedServerManagementTicket,
+	seedDatabaseProvisioningTicket,
+	seedServerManagementTicket,
 } from '../helpers/ticket-fixtures';
 import { createTicketTestApp, TicketTestApp } from '../helpers/ticket-test-app';
 import { httpServerOf } from '../helpers/http-server';
@@ -27,225 +17,228 @@ const ENDPOINT = '/tickets/database/provisioning';
 const USER_EMAIL = 'user@example.com';
 
 describe('GET /tickets/database/provisioning (e2e)', () => {
-  let testApp: TicketTestApp;
-  const auth = authorizationHeaderFor({
-    email: USER_EMAIL,
-    roles: [Role.DATABASE],
-  });
+	let testApp: TicketTestApp;
+	const auth = authorizationHeaderFor({
+		email: USER_EMAIL,
+		roles: [Role.DATABASE],
+	});
 
-  beforeAll(async () => {
-    testApp = await createTicketTestApp({ modules: [SearchTicketModule] });
-  });
+	beforeAll(async () => {
+		testApp = await createTicketTestApp({ modules: [SearchTicketModule] });
+	});
 
-  beforeEach(async () => {
-    await testApp.resetTables();
-  });
+	beforeEach(async () => {
+		await testApp.resetTables();
+	});
 
-  afterAll(async () => {
-    await testApp.close();
-  });
+	afterAll(async () => {
+		await testApp.close();
+	});
 
-  function call(authorization: string | null = auth) {
-    const req = request(httpServerOf(testApp.app)).get(ENDPOINT);
-    if (authorization) {
-      req.set('Authorization', authorization);
-    }
-    return req;
-  }
+	function call(authorization: string | null = auth) {
+		const req = request(httpServerOf(testApp.app)).get(ENDPOINT);
+		if (authorization) {
+			req.set('Authorization', authorization);
+		}
+		return req;
+	}
 
-  describe('listing', () => {
-    it('returns 200 with an empty array when there are no tickets', async () => {
-      const response = await call().expect(200);
+	describe('listing', () => {
+		it('returns 200 with an empty array when there are no tickets', async () => {
+			const response = await call().expect(200);
 
-      expect(response.body).toEqual([]);
-    });
+			expect(response.body).toEqual([]);
+		});
 
-    it('returns 200 with every persisted ticket', async () => {
-      const first = await seedDatabaseProvisioningTicket(testApp.dataSource, {
-        subject: 'First',
-      });
-      const second = await seedDatabaseProvisioningTicket(testApp.dataSource, {
-        subject: 'Second',
-      });
+		it('returns 200 with every persisted ticket', async () => {
+			const first = await seedDatabaseProvisioningTicket(testApp.dataSource, {
+				subject: 'First',
+			});
+			const second = await seedDatabaseProvisioningTicket(testApp.dataSource, {
+				subject: 'Second',
+			});
 
-      const response = await call().expect(200);
+			const response = await call().expect(200);
 
-      expect(response.body).toHaveLength(2);
-      expect(bodyOf<DatabaseProvisioningTicketEntity[]>(response)[0]).toEqual(
-        expect.objectContaining({
-          id: first.id,
-          number: first.number,
-          subject: 'First',
-          status: TicketStatus.OPEN,
-          response: '',
-          informer: 'informer@example.com',
-          assignee: 'assignee@example.com',
-          dbNamespace: first.dbNamespace,
-        }),
-      );
-      expect(bodyOf<DatabaseProvisioningTicketEntity[]>(response)[1]).toEqual(
-        expect.objectContaining({
-          id: second.id,
-          number: second.number,
-          subject: 'Second',
-        }),
-      );
-    });
+			expect(response.body).toHaveLength(2);
+			expect(bodyOf<DatabaseProvisioningTicketEntity[]>(response)[0]).toEqual(
+				expect.objectContaining({
+					id: first.id,
+					number: first.number,
+					subject: 'First',
+					status: TicketStatus.OPEN,
+					response: '',
+					informer: 'informer@example.com',
+					assignee: 'assignee@example.com',
+					dbNamespace: first.dbNamespace,
+				}),
+			);
+			expect(bodyOf<DatabaseProvisioningTicketEntity[]>(response)[1]).toEqual(
+				expect.objectContaining({
+					id: second.id,
+					number: second.number,
+					subject: 'Second',
+				}),
+			);
+		});
 
-    it('includes the audit timestamps of every ticket', async () => {
-      await seedDatabaseProvisioningTicket(testApp.dataSource);
+		it('includes the audit timestamps of every ticket', async () => {
+			await seedDatabaseProvisioningTicket(testApp.dataSource);
 
-      const response = await call().expect(200);
+			const response = await call().expect(200);
 
-      expect(typeof bodyOf<DatabaseProvisioningTicketEntity[]>(response)[0].createdAt).toBe('string');
-      expect(typeof bodyOf<DatabaseProvisioningTicketEntity[]>(response)[0].updatedAt).toBe('string');
-    });
+			expect(typeof bodyOf<DatabaseProvisioningTicketEntity[]>(response)[0].createdAt).toBe(
+				'string',
+			);
+			expect(typeof bodyOf<DatabaseProvisioningTicketEntity[]>(response)[0].updatedAt).toBe(
+				'string',
+			);
+		});
 
-    it('orders the tickets by number ascending regardless of insertion order', async () => {
-      // The number is generated on insert, so it is rewritten afterwards to make
-      // the insertion order differ from the numeric order.
-      const repository = testApp.dataSource.getRepository(
-        DatabaseProvisioningTicketEntity,
-      );
-      const inserted = await seedDatabaseProvisioningTicket(
-        testApp.dataSource,
-        { subject: 'Third' },
-      );
-      const middle = await seedDatabaseProvisioningTicket(testApp.dataSource, {
-        subject: 'Second',
-      });
-      const last = await seedDatabaseProvisioningTicket(testApp.dataSource, {
-        subject: 'First',
-      });
-      await repository.update(inserted.id, { number: 300 });
-      await repository.update(middle.id, { number: 200 });
-      await repository.update(last.id, { number: 100 });
+		it('orders the tickets by number ascending regardless of insertion order', async () => {
+			// The number is generated on insert, so it is rewritten afterwards to make
+			// the insertion order differ from the numeric order.
+			const repository = testApp.dataSource.getRepository(DatabaseProvisioningTicketEntity);
+			const inserted = await seedDatabaseProvisioningTicket(testApp.dataSource, {
+				subject: 'Third',
+			});
+			const middle = await seedDatabaseProvisioningTicket(testApp.dataSource, {
+				subject: 'Second',
+			});
+			const last = await seedDatabaseProvisioningTicket(testApp.dataSource, {
+				subject: 'First',
+			});
+			await repository.update(inserted.id, { number: 300 });
+			await repository.update(middle.id, { number: 200 });
+			await repository.update(last.id, { number: 100 });
 
-      const response = await call().expect(200);
+			const response = await call().expect(200);
 
-      expect(
-        bodyOf<DatabaseProvisioningTicketEntity[]>(response).map((ticket: { number: number }) => ticket.number),
-      ).toEqual([100, 200, 300]);
-      expect(
-        bodyOf<DatabaseProvisioningTicketEntity[]>(response).map((ticket: { subject: string }) => ticket.subject),
-      ).toEqual(['First', 'Second', 'Third']);
-    });
+			expect(
+				bodyOf<DatabaseProvisioningTicketEntity[]>(response).map(
+					(ticket: { number: number }) => ticket.number,
+				),
+			).toEqual([100, 200, 300]);
+			expect(
+				bodyOf<DatabaseProvisioningTicketEntity[]>(response).map(
+					(ticket: { subject: string }) => ticket.subject,
+				),
+			).toEqual(['First', 'Second', 'Third']);
+		});
 
-    it('returns tickets in every status', async () => {
-      await seedDatabaseProvisioningTicket(testApp.dataSource, {
-        status: TicketStatus.OPEN,
-      });
-      await seedDatabaseProvisioningTicket(testApp.dataSource, {
-        status: TicketStatus.IN_PROGRESS,
-      });
-      await seedDatabaseProvisioningTicket(testApp.dataSource, {
-        status: TicketStatus.APPROVED,
-      });
-      await seedDatabaseProvisioningTicket(testApp.dataSource, {
-        status: TicketStatus.REJECTED,
-      });
+		it('returns tickets in every status', async () => {
+			await seedDatabaseProvisioningTicket(testApp.dataSource, {
+				status: TicketStatus.OPEN,
+			});
+			await seedDatabaseProvisioningTicket(testApp.dataSource, {
+				status: TicketStatus.IN_PROGRESS,
+			});
+			await seedDatabaseProvisioningTicket(testApp.dataSource, {
+				status: TicketStatus.APPROVED,
+			});
+			await seedDatabaseProvisioningTicket(testApp.dataSource, {
+				status: TicketStatus.REJECTED,
+			});
 
-      const response = await call().expect(200);
+			const response = await call().expect(200);
 
-      expect(
-        bodyOf<DatabaseProvisioningTicketEntity[]>(response).map((ticket: { status: string }) => ticket.status),
-      ).toEqual([
-        TicketStatus.OPEN,
-        TicketStatus.IN_PROGRESS,
-        TicketStatus.APPROVED,
-        TicketStatus.REJECTED,
-      ]);
-    });
+			expect(
+				bodyOf<DatabaseProvisioningTicketEntity[]>(response).map(
+					(ticket: { status: string }) => ticket.status,
+				),
+			).toEqual([
+				TicketStatus.OPEN,
+				TicketStatus.IN_PROGRESS,
+				TicketStatus.APPROVED,
+				TicketStatus.REJECTED,
+			]);
+		});
 
-    it('does not include tickets of other types', async () => {
-      await seedServerManagementTicket(testApp.dataSource, {
-        subject: 'Another type',
-      });
+		it('does not include tickets of other types', async () => {
+			await seedServerManagementTicket(testApp.dataSource, {
+				subject: 'Another type',
+			});
 
-      const response = await call().expect(200);
+			const response = await call().expect(200);
 
-      expect(response.body).toEqual([]);
-    });
-  });
+			expect(response.body).toEqual([]);
+		});
+	});
 
-  describe('authorization', () => {
-    it('returns 401 when the request has no bearer token', async () => {
-      const response = await call(null).expect(401);
+	describe('authorization', () => {
+		it('returns 401 when the request has no bearer token', async () => {
+			const response = await call(null).expect(401);
 
-      expect(bodyOf<ErrorBody>(response).message).toBe('Missing or malformed bearer token');
-    });
+			expect(bodyOf<ErrorBody>(response).message).toBe('Missing or malformed bearer token');
+		});
 
-    it('returns 401 when the token is signed with an unknown key', async () => {
-      const response = await call(
-        'Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6Im90aGVyIn0.e30.invalid',
-      ).expect(401);
+		it('returns 401 when the token is signed with an unknown key', async () => {
+			const response = await call(
+				'Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6Im90aGVyIn0.e30.invalid',
+			).expect(401);
 
-      expect(bodyOf<ErrorBody>(response).message).toBe('Invalid or expired token');
-    });
+			expect(bodyOf<ErrorBody>(response).message).toBe('Invalid or expired token');
+		});
 
-    it('returns 403 when the user only has the COMMON_USER role', async () => {
-      const response = await call(
-        authorizationHeaderFor({
-          email: USER_EMAIL,
-          roles: [Role.COMMON_USER],
-        }),
-      ).expect(403);
+		it('returns 403 when the user only has the COMMON_USER role', async () => {
+			const response = await call(
+				authorizationHeaderFor({
+					email: USER_EMAIL,
+					roles: [Role.COMMON_USER],
+				}),
+			).expect(403);
 
-      expect(bodyOf<ErrorBody>(response).message).toBe('You do not have the required role');
-    });
+			expect(bodyOf<ErrorBody>(response).message).toBe('You do not have the required role');
+		});
 
-    it('returns 403 when the user only has roles of another domain', async () => {
-      await call(
-        authorizationHeaderFor({
-          email: USER_EMAIL,
-          roles: [Role.SERVER, Role.KUBERNATES_APPROVER],
-        }),
-      ).expect(403);
-    });
+		it('returns 403 when the user only has roles of another domain', async () => {
+			await call(
+				authorizationHeaderFor({
+					email: USER_EMAIL,
+					roles: [Role.SERVER, Role.KUBERNATES_APPROVER],
+				}),
+			).expect(403);
+		});
 
-    it('returns 403 when the token was issued for another application', async () => {
-      const response = await call(
-        authorizationHeaderFor({
-          email: USER_EMAIL,
-          roles: [Role.ADMIN],
-          applicationName: 'iam',
-        }),
-      ).expect(403);
+		it('returns 403 when the token was issued for another application', async () => {
+			const response = await call(
+				authorizationHeaderFor({
+					email: USER_EMAIL,
+					roles: [Role.ADMIN],
+					applicationName: 'iam',
+				}),
+			).expect(403);
 
-      expect(bodyOf<ErrorBody>(response).message).toBe(
-        'This token was not issued for the ticket-hub-api application',
-      );
-    });
+			expect(bodyOf<ErrorBody>(response).message).toBe(
+				'This token was not issued for the ticket-hub-api application',
+			);
+		});
 
-    it('returns 403 when the verified token carries no apps claim', async () => {
-      const response = await call(
-        authorizationHeaderForClaims({ email: 'user@example.com' }),
-      ).expect(403);
+		it('returns 403 when the verified token carries no apps claim', async () => {
+			const response = await call(
+				authorizationHeaderForClaims({ email: 'user@example.com' }),
+			).expect(403);
 
-      expect(bodyOf<ErrorBody>(response).message).toBe(
-        'The token does not carry application information',
-      );
-    });
+			expect(bodyOf<ErrorBody>(response).message).toBe(
+				'The token does not carry application information',
+			);
+		});
 
-    it('accepts the ADMIN role', async () => {
-      await call(
-        authorizationHeaderFor({ email: USER_EMAIL, roles: [Role.ADMIN] }),
-      ).expect(200);
-    });
+		it('accepts the ADMIN role', async () => {
+			await call(authorizationHeaderFor({ email: USER_EMAIL, roles: [Role.ADMIN] })).expect(200);
+		});
 
-    it('accepts the DATABASE role', async () => {
-      await call(
-        authorizationHeaderFor({ email: USER_EMAIL, roles: [Role.DATABASE] }),
-      ).expect(200);
-    });
+		it('accepts the DATABASE role', async () => {
+			await call(authorizationHeaderFor({ email: USER_EMAIL, roles: [Role.DATABASE] })).expect(200);
+		});
 
-    it('accepts the DATABASE_APPROVER role', async () => {
-      await call(
-        authorizationHeaderFor({
-          email: USER_EMAIL,
-          roles: [Role.DATABASE_APPROVER],
-        }),
-      ).expect(200);
-    });
-  });
+		it('accepts the DATABASE_APPROVER role', async () => {
+			await call(
+				authorizationHeaderFor({
+					email: USER_EMAIL,
+					roles: [Role.DATABASE_APPROVER],
+				}),
+			).expect(200);
+		});
+	});
 });

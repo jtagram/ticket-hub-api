@@ -1,15 +1,6 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import {
-  ConflictException,
-  NotFoundException,
-  ParseIntPipe,
-  RequestMethod,
-} from '@nestjs/common';
-import {
-  METHOD_METADATA,
-  PATH_METADATA,
-  ROUTE_ARGS_METADATA,
-} from '@nestjs/common/constants';
+import { ConflictException, NotFoundException, ParseIntPipe, RequestMethod } from '@nestjs/common';
+import { METHOD_METADATA, PATH_METADATA, ROUTE_ARGS_METADATA } from '@nestjs/common/constants';
 import { Reflector } from '@nestjs/core';
 import { ROLES_KEY } from '../../../../common/guards/roles.decorator';
 import { Role } from '../../../../common/roles/role.enum';
@@ -20,7 +11,7 @@ import { prototypeMethod } from '../../../../../test/helpers/prototype-method';
 // @nestjs/typeorm is ESM-only and Jest runs as CommonJS. The code under test is
 // built by hand below, so the injection decorator can be a no-op.
 jest.mock('@nestjs/typeorm', () => ({
-  InjectRepository: () => () => undefined,
+	InjectRepository: () => () => undefined,
 }));
 // The infra-hub-api connector reaches ESM-only packages (@nestjs/axios, @nestjs/config).
 jest.mock('@nestjs/axios', () => ({ HttpService: class HttpService {} }));
@@ -29,105 +20,93 @@ jest.mock('@nestjs/config', () => ({ ConfigService: class ConfigService {} }));
 type ServiceMethod = jest.Mock<(...args: unknown[]) => Promise<unknown>>;
 
 function buildMock(): ServiceMethod {
-  return jest.fn<(...args: unknown[]) => Promise<unknown>>();
+	return jest.fn<(...args: unknown[]) => Promise<unknown>>();
 }
 
 describe('UpdateTicketController.rejectKubernetesManifestTicket', () => {
-  let service: Record<string, ServiceMethod>;
-  let controller: UpdateTicketController;
+	let service: Record<string, ServiceMethod>;
+	let controller: UpdateTicketController;
 
-  beforeEach(() => {
-    service = {
-      approveDatabaseManagementTicket: buildMock(),
-      rejectDatabaseManagementTicket: buildMock(),
-      approveDatabaseProvisioningTicket: buildMock(),
-      rejectDatabaseProvisioningTicket: buildMock(),
-      approveServerManagementTicket: buildMock(),
-      rejectServerManagementTicket: buildMock(),
-      approveKubernetesManifestTicket: buildMock(),
-      rejectKubernetesManifestTicket: buildMock(),
-      approveKubectlCommandTicket: buildMock(),
-      rejectKubectlCommandTicket: buildMock(),
-    };
-    controller = new UpdateTicketController(
-      service as unknown as UpdateTicketService,
-    );
-  });
+	beforeEach(() => {
+		service = {
+			approveDatabaseManagementTicket: buildMock(),
+			rejectDatabaseManagementTicket: buildMock(),
+			approveDatabaseProvisioningTicket: buildMock(),
+			rejectDatabaseProvisioningTicket: buildMock(),
+			approveServerManagementTicket: buildMock(),
+			rejectServerManagementTicket: buildMock(),
+			approveKubernetesManifestTicket: buildMock(),
+			rejectKubernetesManifestTicket: buildMock(),
+			approveKubectlCommandTicket: buildMock(),
+			rejectKubectlCommandTicket: buildMock(),
+		};
+		controller = new UpdateTicketController(service as unknown as UpdateTicketService);
+	});
 
-  it('passes the number to the matching service method and returns its result', async () => {
-    const ticket = { id: 1, number: 42 };
-    service.rejectKubernetesManifestTicket.mockResolvedValue(ticket);
+	it('passes the number to the matching service method and returns its result', async () => {
+		const ticket = { id: 1, number: 42 };
+		service.rejectKubernetesManifestTicket.mockResolvedValue(ticket);
 
-    await expect(controller.rejectKubernetesManifestTicket(42)).resolves.toBe(
-      ticket,
-    );
+		await expect(controller.rejectKubernetesManifestTicket(42)).resolves.toBe(ticket);
 
-    expect(service.rejectKubernetesManifestTicket).toHaveBeenCalledTimes(1);
-    expect(service.rejectKubernetesManifestTicket).toHaveBeenCalledWith(42);
-  });
+		expect(service.rejectKubernetesManifestTicket).toHaveBeenCalledTimes(1);
+		expect(service.rejectKubernetesManifestTicket).toHaveBeenCalledWith(42);
+	});
 
-  it('does not call any other service method', async () => {
-    service.rejectKubernetesManifestTicket.mockResolvedValue({});
+	it('does not call any other service method', async () => {
+		service.rejectKubernetesManifestTicket.mockResolvedValue({});
 
-    await controller.rejectKubernetesManifestTicket(42);
+		await controller.rejectKubernetesManifestTicket(42);
 
-    Object.entries(service)
-      .filter(([name]) => name !== 'rejectKubernetesManifestTicket')
-      .forEach(([, mock]) => expect(mock).not.toHaveBeenCalled());
-  });
+		Object.entries(service)
+			.filter(([name]) => name !== 'rejectKubernetesManifestTicket')
+			.forEach(([, mock]) => expect(mock).not.toHaveBeenCalled());
+	});
 
-  it('propagates the NotFoundException raised by the service', async () => {
-    const failure = new NotFoundException('not found');
-    service.rejectKubernetesManifestTicket.mockRejectedValue(failure);
+	it('propagates the NotFoundException raised by the service', async () => {
+		const failure = new NotFoundException('not found');
+		service.rejectKubernetesManifestTicket.mockRejectedValue(failure);
 
-    await expect(controller.rejectKubernetesManifestTicket(42)).rejects.toBe(
-      failure,
-    );
-  });
+		await expect(controller.rejectKubernetesManifestTicket(42)).rejects.toBe(failure);
+	});
 
-  it('propagates the ConflictException raised by the service', async () => {
-    const failure = new ConflictException('already handled');
-    service.rejectKubernetesManifestTicket.mockRejectedValue(failure);
+	it('propagates the ConflictException raised by the service', async () => {
+		const failure = new ConflictException('already handled');
+		service.rejectKubernetesManifestTicket.mockRejectedValue(failure);
 
-    await expect(controller.rejectKubernetesManifestTicket(42)).rejects.toBe(
-      failure,
-    );
-  });
+		await expect(controller.rejectKubernetesManifestTicket(42)).rejects.toBe(failure);
+	});
 
-  it('is routed as PATCH /tickets/kubernetes/manifest/:number/reject', () => {
-    const handler =
-      prototypeMethod(UpdateTicketController.prototype, 'rejectKubernetesManifestTicket');
+	it('is routed as PATCH /tickets/kubernetes/manifest/:number/reject', () => {
+		const handler = prototypeMethod(
+			UpdateTicketController.prototype,
+			'rejectKubernetesManifestTicket',
+		);
 
-    expect(Reflect.getMetadata(PATH_METADATA, UpdateTicketController)).toBe(
-      'tickets',
-    );
-    expect(Reflect.getMetadata(PATH_METADATA, handler)).toBe(
-      'kubernetes/manifest/:number/reject',
-    );
-    expect(Reflect.getMetadata(METHOD_METADATA, handler)).toBe(
-      RequestMethod.PATCH,
-    );
-  });
+		expect(Reflect.getMetadata(PATH_METADATA, UpdateTicketController)).toBe('tickets');
+		expect(Reflect.getMetadata(PATH_METADATA, handler)).toBe('kubernetes/manifest/:number/reject');
+		expect(Reflect.getMetadata(METHOD_METADATA, handler)).toBe(RequestMethod.PATCH);
+	});
 
-  it('parses the number path param with ParseIntPipe', () => {
-    const metadata = Reflect.getMetadata(
-      ROUTE_ARGS_METADATA,
-      UpdateTicketController,
-      'rejectKubernetesManifestTicket',
-    ) as Record<string, { data: string; pipes: unknown[] }>;
-    const params = Object.values(metadata);
+	it('parses the number path param with ParseIntPipe', () => {
+		const metadata = Reflect.getMetadata(
+			ROUTE_ARGS_METADATA,
+			UpdateTicketController,
+			'rejectKubernetesManifestTicket',
+		) as Record<string, { data: string; pipes: unknown[] }>;
+		const params = Object.values(metadata);
 
-    expect(params).toHaveLength(1);
-    expect(params[0].data).toBe('number');
-    expect(params[0].pipes).toEqual([ParseIntPipe]);
-  });
+		expect(params).toHaveLength(1);
+		expect(params[0].data).toBe('number');
+		expect(params[0].pipes).toEqual([ParseIntPipe]);
+	});
 
-  it('is restricted to the roles ADMIN, KUBERNATES_APPROVER', () => {
-    const roles = new Reflector().get<Role[]>(
-      ROLES_KEY,
-      prototypeMethod(UpdateTicketController.prototype, 'rejectKubernetesManifestTicket'),
-    );
+	it('is restricted to the roles ADMIN, KUBERNATES_APPROVER', () => {
+		const roles = new Reflector().get<Role[]>(
+			ROLES_KEY,
+			prototypeMethod(UpdateTicketController.prototype, 'rejectKubernetesManifestTicket'),
+		);
 
-    expect(roles).toEqual([Role.ADMIN, Role.KUBERNATES_APPROVER]);
-  });
+		expect(roles).toEqual([Role.ADMIN, Role.KUBERNATES_APPROVER]);
+	});
 });
