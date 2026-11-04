@@ -20,6 +20,8 @@ const config: Record<string, string> = {
 	TICKET_HUB_API_SERVICE_CLIENT_SECRET: 'service-secret',
 };
 
+const envelope = (data: unknown) => ({ ok: true, msg: 'ok', data });
+
 const buildJwt = (expMs: number | undefined, extra = 'x'): string => {
 	const encode = (value: unknown) => Buffer.from(JSON.stringify(value)).toString('base64url');
 	const payload = expMs === undefined ? {} : { exp: Math.floor(expMs / 1000) };
@@ -49,7 +51,7 @@ describe('AppUserAuthService.getAccessToken', () => {
 
 	it('logs in against iam-api apps-users endpoint with the service credentials', async () => {
 		const token = buildJwt(NOW_MS + 3_600_000);
-		post.mockReturnValue(of({ data: { access_token: token } }));
+		post.mockReturnValue(of({ data: envelope({ access_token: token }) }));
 
 		await service.getAccessToken('infra-hub');
 
@@ -69,13 +71,13 @@ describe('AppUserAuthService.getAccessToken', () => {
 
 	it('returns the access token issued by iam-api', async () => {
 		const token = buildJwt(NOW_MS + 3_600_000);
-		post.mockReturnValue(of({ data: { access_token: token } }));
+		post.mockReturnValue(of({ data: envelope({ access_token: token }) }));
 
 		await expect(service.getAccessToken('infra-hub')).resolves.toBe(token);
 	});
 
 	it('reuses the cached token while it is still valid', async () => {
-		post.mockReturnValue(of({ data: { access_token: buildJwt(NOW_MS + 3_600_000) } }));
+		post.mockReturnValue(of({ data: envelope({ access_token: buildJwt(NOW_MS + 3_600_000) }) }));
 
 		const first = await service.getAccessToken('infra-hub');
 		const second = await service.getAccessToken('infra-hub');
@@ -86,8 +88,12 @@ describe('AppUserAuthService.getAccessToken', () => {
 
 	it('keeps one cached token per target application', async () => {
 		post
-			.mockReturnValueOnce(of({ data: { access_token: buildJwt(NOW_MS + 3_600_000, 'a') } }))
-			.mockReturnValueOnce(of({ data: { access_token: buildJwt(NOW_MS + 3_600_000, 'b') } }));
+			.mockReturnValueOnce(
+				of({ data: envelope({ access_token: buildJwt(NOW_MS + 3_600_000, 'a') }) }),
+			)
+			.mockReturnValueOnce(
+				of({ data: envelope({ access_token: buildJwt(NOW_MS + 3_600_000, 'b') }) }),
+			);
 
 		const infra = await service.getAccessToken('infra-hub');
 		const iam = await service.getAccessToken('iam');
@@ -103,8 +109,12 @@ describe('AppUserAuthService.getAccessToken', () => {
 
 	it('logs in again when the token is inside the 60 seconds safety margin', async () => {
 		post
-			.mockReturnValueOnce(of({ data: { access_token: buildJwt(NOW_MS + 3_600_000, 'old') } }))
-			.mockReturnValueOnce(of({ data: { access_token: buildJwt(NOW_MS + 7_200_000, 'new') } }));
+			.mockReturnValueOnce(
+				of({ data: envelope({ access_token: buildJwt(NOW_MS + 3_600_000, 'old') }) }),
+			)
+			.mockReturnValueOnce(
+				of({ data: envelope({ access_token: buildJwt(NOW_MS + 7_200_000, 'new') }) }),
+			);
 
 		await service.getAccessToken('infra-hub');
 		now = NOW_MS + 3_600_000 - MARGIN_MS;
@@ -115,7 +125,7 @@ describe('AppUserAuthService.getAccessToken', () => {
 	});
 
 	it('still reuses the token one millisecond before the safety margin', async () => {
-		post.mockReturnValue(of({ data: { access_token: buildJwt(NOW_MS + 3_600_000) } }));
+		post.mockReturnValue(of({ data: envelope({ access_token: buildJwt(NOW_MS + 3_600_000) }) }));
 
 		await service.getAccessToken('infra-hub');
 		now = NOW_MS + 3_600_000 - MARGIN_MS - 1;
@@ -125,10 +135,26 @@ describe('AppUserAuthService.getAccessToken', () => {
 	});
 
 	it('throws when the response has no access_token', async () => {
-		post.mockReturnValue(of({ data: {} }));
+		post.mockReturnValue(of({ data: envelope({}) }));
 
 		await expect(service.getAccessToken('infra-hub')).rejects.toThrow(
 			'Failed to log in against iam-api as the ticket-hub-api service app-user for application "infra-hub": missing or empty "access_token" field',
+		);
+	});
+
+	it('throws when the access_token is at the top level instead of inside "data" (pre-envelope shape)', async () => {
+		post.mockReturnValue(of({ data: { access_token: buildJwt(NOW_MS + 3_600_000) } }));
+
+		await expect(service.getAccessToken('infra-hub')).rejects.toThrow(
+			'missing or empty "access_token"',
+		);
+	});
+
+	it('throws when the envelope is ok:false with null data', async () => {
+		post.mockReturnValue(of({ data: { ok: false, msg: 'Invalid credentials', data: null } }));
+
+		await expect(service.getAccessToken('infra-hub')).rejects.toThrow(
+			'missing or empty "access_token"',
 		);
 	});
 
@@ -141,7 +167,7 @@ describe('AppUserAuthService.getAccessToken', () => {
 	});
 
 	it('throws when the access_token is blank', async () => {
-		post.mockReturnValue(of({ data: { access_token: '   ' } }));
+		post.mockReturnValue(of({ data: envelope({ access_token: '   ' }) }));
 
 		await expect(service.getAccessToken('infra-hub')).rejects.toThrow(
 			'missing or empty "access_token"',
@@ -149,7 +175,7 @@ describe('AppUserAuthService.getAccessToken', () => {
 	});
 
 	it('throws when the access_token is not a string', async () => {
-		post.mockReturnValue(of({ data: { access_token: 123 } }));
+		post.mockReturnValue(of({ data: envelope({ access_token: 123 }) }));
 
 		await expect(service.getAccessToken('infra-hub')).rejects.toThrow(
 			'missing or empty "access_token"',
@@ -157,7 +183,7 @@ describe('AppUserAuthService.getAccessToken', () => {
 	});
 
 	it('throws when the token is not a JWT with a payload part', async () => {
-		post.mockReturnValue(of({ data: { access_token: 'not-a-jwt' } }));
+		post.mockReturnValue(of({ data: envelope({ access_token: 'not-a-jwt' }) }));
 
 		await expect(service.getAccessToken('infra-hub')).rejects.toThrow(
 			'Failed to decode JWT: malformed token',
@@ -165,7 +191,7 @@ describe('AppUserAuthService.getAccessToken', () => {
 	});
 
 	it('throws when the JWT payload has no exp claim', async () => {
-		post.mockReturnValue(of({ data: { access_token: buildJwt(undefined) } }));
+		post.mockReturnValue(of({ data: envelope({ access_token: buildJwt(undefined) }) }));
 
 		await expect(service.getAccessToken('infra-hub')).rejects.toThrow(
 			'Failed to decode JWT: missing "exp" claim',
@@ -174,8 +200,8 @@ describe('AppUserAuthService.getAccessToken', () => {
 
 	it('does not cache a token whose exp could not be decoded', async () => {
 		post
-			.mockReturnValueOnce(of({ data: { access_token: 'not-a-jwt' } }))
-			.mockReturnValueOnce(of({ data: { access_token: buildJwt(NOW_MS + 3_600_000) } }));
+			.mockReturnValueOnce(of({ data: envelope({ access_token: 'not-a-jwt' }) }))
+			.mockReturnValueOnce(of({ data: envelope({ access_token: buildJwt(NOW_MS + 3_600_000) }) }));
 
 		await expect(service.getAccessToken('infra-hub')).rejects.toThrow();
 		await expect(service.getAccessToken('infra-hub')).resolves.toBeDefined();
@@ -202,7 +228,7 @@ describe('AppUserAuthService.getAccessToken', () => {
 				resolve,
 				reject,
 				observable: defer(async () => ({
-					data: { access_token: await pending },
+					data: envelope({ access_token: await pending }),
 				})),
 			};
 		}
@@ -229,10 +255,10 @@ describe('AppUserAuthService.getAccessToken', () => {
 			post.mockImplementation(
 				(_url: string, _body: unknown, options: { headers: Record<string, string> }) =>
 					of({
-						data: {
+						data: envelope({
 							access_token:
 								options.headers['x-target-application'] === 'infra-hub' ? infraToken : iamToken,
-						},
+						}),
 					}),
 			);
 
@@ -262,7 +288,7 @@ describe('AppUserAuthService.getAccessToken', () => {
 		it('does not cache the failure: the next call logs in again', async () => {
 			const token = buildJwt(NOW_MS + 3_600_000);
 			post.mockReturnValueOnce(throwError(() => new Error('boom')));
-			post.mockReturnValueOnce(of({ data: { access_token: token } }));
+			post.mockReturnValueOnce(of({ data: envelope({ access_token: token }) }));
 
 			await expect(service.getAccessToken('infra-hub')).rejects.toThrow('boom');
 			await expect(service.getAccessToken('infra-hub')).resolves.toBe(token);
@@ -272,7 +298,7 @@ describe('AppUserAuthService.getAccessToken', () => {
 
 		it('removes the in-flight entry once the login succeeded and serves the cache afterwards', async () => {
 			const token = buildJwt(NOW_MS + 3_600_000);
-			post.mockReturnValue(of({ data: { access_token: token } }));
+			post.mockReturnValue(of({ data: envelope({ access_token: token }) }));
 
 			await Promise.all([service.getAccessToken('infra-hub'), service.getAccessToken('infra-hub')]);
 			await service.getAccessToken('infra-hub');
@@ -283,10 +309,12 @@ describe('AppUserAuthService.getAccessToken', () => {
 		it('starts a new login when the cached token expired after a shared one settled', async () => {
 			post.mockReturnValueOnce(
 				of({
-					data: { access_token: buildJwt(NOW_MS + MARGIN_MS + 1000, 'a') },
+					data: envelope({ access_token: buildJwt(NOW_MS + MARGIN_MS + 1000, 'a') }),
 				}),
 			);
-			post.mockReturnValueOnce(of({ data: { access_token: buildJwt(NOW_MS + 3_600_000, 'b') } }));
+			post.mockReturnValueOnce(
+				of({ data: envelope({ access_token: buildJwt(NOW_MS + 3_600_000, 'b') }) }),
+			);
 
 			await service.getAccessToken('infra-hub');
 			now += 5000;

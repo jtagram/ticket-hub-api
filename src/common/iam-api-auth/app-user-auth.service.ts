@@ -2,8 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
+import { IamApiEnvelope } from './iam-api-envelope';
 
-/** Shape of iam-api's `POST /apps-users/login` response. */
+/** Payload (`data`) of iam-api's `POST /apps-users/login` response. */
 interface AppUserLoginResponse {
 	access_token: string;
 }
@@ -99,7 +100,7 @@ export class AppUserAuthService {
 
 	private async login(targetApplicationName: string): Promise<string> {
 		const response = await firstValueFrom(
-			this.httpService.post<AppUserLoginResponse>(
+			this.httpService.post<IamApiEnvelope<AppUserLoginResponse>>(
 				`${this.iamApiUrl}/apps-users/login`,
 				{
 					clienteId: this.serviceClientId,
@@ -115,7 +116,7 @@ export class AppUserAuthService {
 			),
 		);
 
-		const accessToken = response.data?.access_token;
+		const accessToken = response.data?.data?.access_token;
 		if (typeof accessToken !== 'string' || accessToken.trim().length === 0) {
 			throw new Error(
 				`Failed to log in against iam-api as the ticket-hub-api service app-user for application "${targetApplicationName}": missing or empty "access_token" field`,
