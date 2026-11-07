@@ -6,12 +6,12 @@ import { DatabaseProvisioningTicketEntity } from '../../src/common/database/data
 import { DatabaseProvisioningTicketsRepository } from '../../src/common/database/database-provisioning-ticket/database-provisioning-tickets.repository';
 import { TicketStatus } from '../../src/common/database/ticket-status.enum';
 import { Role } from '../../src/common/roles/role.enum';
-import { InfraHubApiConnector } from '../../src/modules/infra-hub-api/infra-hub-api.connector';
 import { UpdateTicketModule } from '../../src/modules/update-ticket/update-ticket.module';
 import { createBarrier } from '../helpers/concurrency';
 import {
 	callCounts,
 	createInfraHubConnectorFake,
+	infraHubOverrides,
 	infraHubFailure,
 	infraHubSuccess,
 	resetFake,
@@ -23,7 +23,7 @@ import {
 } from '../helpers/ticket-fixtures';
 import { createTicketTestApp, TicketTestApp } from '../helpers/ticket-test-app';
 import { httpServerOf } from '../helpers/http-server';
-import { bodyOf, ErrorBody } from '../helpers/response-types';
+import { bodyOf, ErrorBody, SuccessBody } from '../helpers/response-types';
 import { prototypeMethod } from '../helpers/prototype-method';
 
 const ENDPOINT = '/tickets/database/provisioning';
@@ -40,7 +40,7 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
 	beforeAll(async () => {
 		testApp = await createTicketTestApp({
 			modules: [UpdateTicketModule],
-			overrides: [{ provide: InfraHubApiConnector, useValue: infraHub }],
+			overrides: [...infraHubOverrides(infraHub)],
 		});
 	});
 
@@ -76,7 +76,7 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
 
 			const response = await call(ticket.number).expect(200);
 
-			expect(response.body).toEqual(
+			expect(bodyOf<SuccessBody<unknown>>(response).data).toEqual(
 				expect.objectContaining({
 					id: ticket.id,
 					number: ticket.number,
@@ -160,10 +160,12 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
 
 			const response = await call(ticket.number).expect(200);
 
-			expect(bodyOf<DatabaseProvisioningTicketEntity>(response).response).toBe(
+			expect(bodyOf<SuccessBody<DatabaseProvisioningTicketEntity>>(response).data.response).toBe(
 				JSON.stringify(payload.executionResult),
 			);
-			expect(bodyOf<DatabaseProvisioningTicketEntity>(response).response).not.toContain('logId');
+			expect(
+				bodyOf<SuccessBody<DatabaseProvisioningTicketEntity>>(response).data.response,
+			).not.toContain('logId');
 			const row = await findRow(ticket.id);
 			expect(row.response).toBe(JSON.stringify(payload.executionResult));
 		});
@@ -175,12 +177,12 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
 			const response = await call(ticket.number).expect(502);
 
 			expect(response.body).toEqual({
-				statusCode: 502,
-				message:
+				ok: false,
+				msg:
 					'infra-hub-api reported that the execution for Database provisioning ticket ' +
 					ticket.number +
 					' failed. The ticket stays IN_PROGRESS and the execution result was saved in its response; it will not be executed again.',
-				error: 'Bad Gateway',
+				data: null,
 			});
 		});
 
@@ -204,7 +206,7 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
 			await call(ticket.number).expect(502);
 			const retry = await call(ticket.number).expect(409);
 
-			expect(bodyOf<ErrorBody>(retry).message).toBe(
+			expect(bodyOf<ErrorBody>(retry).msg).toBe(
 				'Ticket with number ' + ticket.number + ' is already IN_PROGRESS, it cannot be approved',
 			);
 			expect(infraHub.createDatabase).toHaveBeenCalledTimes(1);
@@ -229,13 +231,13 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
 				const response = await call(ticket.number).expect(500);
 
 				expect(response.body).toEqual({
-					statusCode: 500,
-					message:
+					ok: false,
+					msg:
 						'The action of Database provisioning ticket ' +
 						ticket.number +
 						' WAS executed by infra-hub-api, but the ticket status could not be saved and it is still IN_PROGRESS. ' +
 						'Do not approve it again: contact an administrator to reconcile it.',
-					error: 'Internal Server Error',
+					data: null,
 				});
 				expect(updateSpy).toHaveBeenCalledTimes(1);
 			} finally {
@@ -286,7 +288,7 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
 			await call(ticket.number).expect(200);
 			const response = await call(ticket.number).expect(409);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe(
+			expect(bodyOf<ErrorBody>(response).msg).toBe(
 				'Ticket with number ' + ticket.number + ' is already APPROVED, it cannot be approved',
 			);
 			expect(infraHub.createDatabase).toHaveBeenCalledTimes(1);
@@ -296,9 +298,9 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
 			const response = await call(999).expect(404);
 
 			expect(response.body).toEqual({
-				statusCode: 404,
-				message: 'Database provisioning ticket with number 999 not found',
-				error: 'Not Found',
+				ok: false,
+				msg: 'Database provisioning ticket with number 999 not found',
+				data: null,
 			});
 			expect(Object.values(callCounts(infraHub)).every((count) => count === 0)).toBe(true);
 		});
@@ -320,10 +322,9 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
 			const response = await call(ticket.number).expect(409);
 
 			expect(response.body).toEqual({
-				statusCode: 409,
-				message:
-					'Ticket with number ' + ticket.number + ' is already APPROVED, it cannot be approved',
-				error: 'Conflict',
+				ok: false,
+				msg: 'Ticket with number ' + ticket.number + ' is already APPROVED, it cannot be approved',
+				data: null,
 			});
 			const row = await findRow(ticket.id);
 			expect(row.status).toBe(TicketStatus.APPROVED);
@@ -338,7 +339,7 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
 
 			const response = await call(ticket.number).expect(409);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe(
+			expect(bodyOf<ErrorBody>(response).msg).toBe(
 				'Ticket with number ' + ticket.number + ' is already REJECTED, it cannot be approved',
 			);
 			const row = await findRow(ticket.id);
@@ -356,10 +357,10 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
 			const response = await call(ticket.number).expect(409);
 
 			expect(response.body).toEqual({
-				statusCode: 409,
-				message:
+				ok: false,
+				msg:
 					'Ticket with number ' + ticket.number + ' is already IN_PROGRESS, it cannot be approved',
-				error: 'Conflict',
+				data: null,
 			});
 			const row = await findRow(ticket.id);
 			expect(row.status).toBe(TicketStatus.IN_PROGRESS);
@@ -399,7 +400,7 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
 
 				expect([first.status, second.status].sort()).toEqual([200, 409]);
 				const loser = first.status === 409 ? first : second;
-				expect(bodyOf<ErrorBody>(loser).message).toBe(
+				expect(bodyOf<ErrorBody>(loser).msg).toBe(
 					'Ticket with number ' +
 						ticket.number +
 						' could not be approved: it was claimed by another request or it is no longer OPEN',
@@ -420,7 +421,7 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
 			await call(ticket.number).expect(500);
 			const retry = await call(ticket.number).expect(409);
 
-			expect(bodyOf<ErrorBody>(retry).message).toBe(
+			expect(bodyOf<ErrorBody>(retry).msg).toBe(
 				'Ticket with number ' + ticket.number + ' is already IN_PROGRESS, it cannot be approved',
 			);
 			expect(infraHub.createDatabase).toHaveBeenCalledTimes(1);
@@ -465,9 +466,9 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
 			const response = await call('abc').expect(400);
 
 			expect(response.body).toEqual({
-				statusCode: 400,
-				message: 'Validation failed (numeric string is expected)',
-				error: 'Bad Request',
+				ok: false,
+				msg: 'Validation failed (numeric string is expected)',
+				data: null,
 			});
 			expect(Object.values(callCounts(infraHub)).every((count) => count === 0)).toBe(true);
 		});
@@ -487,8 +488,9 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
 			const response = await call(ticket.number).expect(502);
 
 			expect(response.body).toEqual({
-				statusCode: 502,
-				message: 'Bad gateway from infra-hub-api',
+				ok: false,
+				msg: 'Bad gateway from infra-hub-api',
+				data: null,
 			});
 			const row = await findRow(ticket.id);
 			expect(row.status).toBe(TicketStatus.IN_PROGRESS);
@@ -503,7 +505,7 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
 
 			const response = await call(ticket.number).expect(422);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe('The request payload is invalid');
+			expect(bodyOf<ErrorBody>(response).msg).toBe('The request payload is invalid');
 			const row = await findRow(ticket.id);
 			expect(row.status).toBe(TicketStatus.IN_PROGRESS);
 		});
@@ -515,8 +517,9 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
 			const response = await call(ticket.number).expect(500);
 
 			expect(response.body).toEqual({
-				statusCode: 500,
-				message: 'An unexpected error occurred. Please try again later.',
+				ok: false,
+				msg: 'An unexpected error occurred. Please try again later.',
+				data: null,
 			});
 			const row = await findRow(ticket.id);
 			expect(row.status).toBe(TicketStatus.IN_PROGRESS);
@@ -533,7 +536,7 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
 			await call(ticket.number).expect(400);
 			const retry = await call(ticket.number).expect(409);
 
-			expect(bodyOf<ErrorBody>(retry).message).toBe(
+			expect(bodyOf<ErrorBody>(retry).msg).toBe(
 				'Ticket with number ' + ticket.number + ' is already IN_PROGRESS, it cannot be approved',
 			);
 			expect(infraHub.createDatabase).toHaveBeenCalledTimes(1);
@@ -546,7 +549,7 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
 			infraHub.createDatabase.mockResolvedValue(infraHubSuccess());
 			const response = await call(ticket.number, null).expect(401);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe('Missing or malformed bearer token');
+			expect(bodyOf<ErrorBody>(response).msg).toBe('Missing or malformed bearer token');
 		});
 
 		it('returns 401 when the token is signed with an unknown key', async () => {
@@ -557,7 +560,7 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
 				'Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6Im90aGVyIn0.e30.invalid',
 			).expect(401);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe('Invalid or expired token');
+			expect(bodyOf<ErrorBody>(response).msg).toBe('Invalid or expired token');
 		});
 
 		it('returns 403 when the user only has the COMMON_USER role', async () => {
@@ -571,7 +574,7 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
 				}),
 			).expect(403);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe('You do not have the required role');
+			expect(bodyOf<ErrorBody>(response).msg).toBe('You do not have the required role');
 		});
 
 		it('returns 403 when the user only has roles of another domain', async () => {
@@ -598,7 +601,7 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
 				}),
 			).expect(403);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe(
+			expect(bodyOf<ErrorBody>(response).msg).toBe(
 				'This token was not issued for the ticket-hub-api application',
 			);
 		});
@@ -611,7 +614,7 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
 				authorizationHeaderForClaims({ email: 'user@example.com' }),
 			).expect(403);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe(
+			expect(bodyOf<ErrorBody>(response).msg).toBe(
 				'The token does not carry application information',
 			);
 		});
@@ -627,7 +630,7 @@ describe('PATCH /tickets/database/provisioning/:number/approve (e2e)', () => {
 				}),
 			).expect(403);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe('You do not have the required role');
+			expect(bodyOf<ErrorBody>(response).msg).toBe('You do not have the required role');
 		});
 
 		it('does not touch the ticket nor infra-hub-api when the user is forbidden', async () => {

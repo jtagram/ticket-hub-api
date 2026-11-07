@@ -3,6 +3,7 @@ import { ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import { Role } from '../../roles/role.enum';
+import { IS_PUBLIC_KEY } from '../public.decorator';
 import { ROLES_KEY } from '../roles.decorator';
 import { RolesGuard } from '../roles.guard';
 
@@ -25,6 +26,8 @@ const buildUser = (applicationName: string, roles: string[]) => ({
 
 describe('RolesGuard', () => {
 	let reflector: { getAllAndOverride: jest.Mock };
+	let isPublic: boolean;
+	let requiredRoles: unknown;
 	let configService: { get: jest.Mock };
 	let guard: RolesGuard;
 	const handler = function handler() {};
@@ -38,7 +41,13 @@ describe('RolesGuard', () => {
 		}) as unknown as ExecutionContext;
 
 	beforeEach(() => {
-		reflector = { getAllAndOverride: jest.fn() };
+		isPublic = false;
+		requiredRoles = undefined;
+		reflector = {
+			getAllAndOverride: jest.fn((key: unknown) =>
+				key === IS_PUBLIC_KEY ? isPublic : requiredRoles,
+			),
+		};
 		configService = { get: jest.fn().mockReturnValue(APPLICATION_NAME) };
 		guard = new RolesGuard(
 			reflector as unknown as Reflector,
@@ -47,30 +56,40 @@ describe('RolesGuard', () => {
 	});
 
 	describe('routes without required roles', () => {
-		it('allows when no @Roles metadata exists, even without a user', () => {
-			reflector.getAllAndOverride.mockReturnValue(undefined);
+		it('allows a public route without roles, even without a user', () => {
+			isPublic = true;
 
 			expect(guard.canActivate(buildContext())).toBe(true);
 		});
 
-		it('allows when @Roles was declared empty', () => {
-			reflector.getAllAndOverride.mockReturnValue([]);
-
-			expect(guard.canActivate(buildContext())).toBe(true);
+		it('denies by default a non-public route with no @Roles metadata (403)', () => {
+			expect(() => guard.canActivate(buildContext(buildUser(APPLICATION_NAME, ['ADMIN'])))).toThrow(
+				new ForbiddenException('This route does not declare the roles allowed to access it'),
+			);
 		});
 
-		it('reads the roles metadata from the handler and the class', () => {
-			reflector.getAllAndOverride.mockReturnValue(undefined);
+		it('denies by default a non-public route whose @Roles was declared empty (403)', () => {
+			requiredRoles = [];
 
-			guard.canActivate(buildContext());
+			expect(() => guard.canActivate(buildContext(buildUser(APPLICATION_NAME, ['ADMIN'])))).toThrow(
+				ForbiddenException,
+			);
+		});
 
+		it('reads the roles and public metadata from the handler and the class', () => {
+			expect(() => guard.canActivate(buildContext())).toThrow();
+
+			expect(reflector.getAllAndOverride).toHaveBeenCalledWith(IS_PUBLIC_KEY, [
+				handler,
+				Controller,
+			]);
 			expect(reflector.getAllAndOverride).toHaveBeenCalledWith(ROLES_KEY, [handler, Controller]);
 		});
 	});
 
 	describe('routes with required roles', () => {
 		beforeEach(() => {
-			reflector.getAllAndOverride.mockReturnValue([Role.ADMIN, Role.SERVER]);
+			requiredRoles = [Role.ADMIN, Role.SERVER];
 		});
 
 		it('throws Forbidden when there is no authenticated user', () => {

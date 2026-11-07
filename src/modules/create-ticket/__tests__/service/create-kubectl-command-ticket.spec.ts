@@ -75,7 +75,11 @@ describe('CreateTicketService.createKubectlCommandTicket', () => {
 		const saved = { id: 1, number: 10 };
 		target.create.mockResolvedValue(saved);
 
-		await expect(service.createKubectlCommandTicket(dto)).resolves.toBe(saved);
+		await expect(service.createKubectlCommandTicket(dto)).resolves.toEqual({
+			ok: true,
+			msg: 'Kubectl command ticket created',
+			data: saved,
+		});
 	});
 
 	it('propagates the mapper error without calling the repository for a whitespace-only kubectlCommand', async () => {

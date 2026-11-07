@@ -243,7 +243,11 @@ describe('UpdateTicketService.approveDatabaseManagementTicket', () => {
 		infra.manageDatabase.mockResolvedValue({ executionResult, logId: 'log-1' });
 		target.update.mockResolvedValue(saved);
 
-		await expect(service.approveDatabaseManagementTicket(42)).resolves.toBe(saved);
+		await expect(service.approveDatabaseManagementTicket(42)).resolves.toEqual({
+			ok: true,
+			msg: 'Database management ticket approved',
+			data: saved,
+		});
 	});
 
 	describe('when infra-hub-api reports success false', () => {

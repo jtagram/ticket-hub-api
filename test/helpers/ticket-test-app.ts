@@ -19,6 +19,7 @@ import { ServerManagementTicketsRepository } from '../../src/common/database/ser
 import { FilterModule } from '../../src/common/filter/filter.module';
 import { JwtAuthGuard } from '../../src/common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../src/common/guards/roles.guard';
+import { AppUserAuthService } from '../../src/common/iam-api-auth/app-user-auth.service';
 import { JwtPublicKeyService } from '../../src/common/jwt/jwt-public-key.service';
 import { createInMemoryDataSource } from './in-memory-db';
 import { publicKeyServiceStub, TEST_APPLICATION_NAME } from './test-auth';
@@ -92,6 +93,20 @@ export async function createTicketTestApp(options: TicketTestAppOptions): Promis
 	})
 	class InMemoryDatabaseModule {}
 
+	// Stand-in for the global AppUserAuthModule: the service login against iam-api
+	// is not under test, so every connector gets a fixed service token.
+	@Global()
+	@Module({
+		providers: [
+			{
+				provide: AppUserAuthService,
+				useValue: { getAccessToken: () => Promise.resolve('service-token') },
+			},
+		],
+		exports: [AppUserAuthService],
+	})
+	class StubAppUserAuthModule {}
+
 	@Module({
 		imports: [
 			ConfigModule.forRoot({
@@ -102,6 +117,7 @@ export async function createTicketTestApp(options: TicketTestAppOptions): Promis
 			LoggerModule.forRoot({ pinoHttp: { level: 'silent' } }),
 			JwtModule.register({}),
 			InMemoryDatabaseModule,
+			StubAppUserAuthModule,
 			FilterModule,
 			...options.modules,
 		],

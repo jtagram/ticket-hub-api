@@ -44,16 +44,24 @@ describe('SearchForValueListsService.findDatabaseDeployments', () => {
 			deployments: ['postgres-main', 'postgres-replica'],
 		});
 
-		await expect(service.findDatabaseDeployments({ namespace: 'prod' })).resolves.toEqual([
-			{ value: 'postgres-main', label: 'postgres-main' },
-			{ value: 'postgres-replica', label: 'postgres-replica' },
-		]);
+		await expect(service.findDatabaseDeployments({ namespace: 'prod' })).resolves.toEqual({
+			ok: true,
+			msg: 'Database deployments retrieved successfully',
+			data: [
+				{ value: 'postgres-main', label: 'postgres-main' },
+				{ value: 'postgres-replica', label: 'postgres-replica' },
+			],
+		});
 	});
 
 	it('returns an empty list when the namespace has no deployments', async () => {
 		infra.listDeployments.mockResolvedValue({ deployments: [] });
 
-		await expect(service.findDatabaseDeployments({ namespace: 'empty' })).resolves.toEqual([]);
+		await expect(service.findDatabaseDeployments({ namespace: 'empty' })).resolves.toEqual({
+			ok: true,
+			msg: 'Database deployments retrieved successfully',
+			data: [],
+		});
 	});
 
 	it('does not call iam-api nor list databases', async () => {

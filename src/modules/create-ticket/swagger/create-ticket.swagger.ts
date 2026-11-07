@@ -1,6 +1,7 @@
 import { applyDecorators } from '@nestjs/common';
-import { ApiBadRequestResponse, ApiCreatedResponse, ApiOperation } from '@nestjs/swagger';
+import { ApiBadRequestResponse, ApiOperation } from '@nestjs/swagger';
 import { ApiProtected, requiredRolesText } from '../../../common/swagger/api-protected.decorator';
+import { ApiCreatedResponseBody } from '../../../common/swagger/api-response-body.decorator';
 import { Role } from '../../../common/roles/role.enum';
 import { DatabaseManagementTicketEntity } from '../../../common/database/database-management-ticket/database-management-ticket.entity';
 import { DatabaseProvisioningTicketEntity } from '../../../common/database/database-provisioning-ticket/database-provisioning-ticket.entity';
@@ -33,9 +34,10 @@ export const ApiCreateDatabaseManagementTicket = () =>
 			description: `Creates an \`OPEN\` ticket that runs SQL code on a database once it is approved. ${requiredRolesText(Role.ADMIN, Role.DATABASE, Role.DATABASE_APPROVER)} ${INFORMER_NOTE}`,
 		}),
 		ApiProtected(),
-		ApiCreatedResponse({
+		ApiCreatedResponseBody({
 			description: 'Ticket created.',
 			type: DatabaseManagementTicketEntity,
+			msg: 'Database management ticket created',
 		}),
 		ApiBadRequestResponse({ description: badRequestDescription() }),
 	);
@@ -47,9 +49,10 @@ export const ApiCreateDatabaseProvisioningTicket = () =>
 			description: `Creates an \`OPEN\` ticket that creates a new database once it is approved. ${requiredRolesText(Role.ADMIN, Role.DATABASE, Role.DATABASE_APPROVER)} ${INFORMER_NOTE}`,
 		}),
 		ApiProtected(),
-		ApiCreatedResponse({
+		ApiCreatedResponseBody({
 			description: 'Ticket created.',
 			type: DatabaseProvisioningTicketEntity,
+			msg: 'Database provisioning ticket created',
 		}),
 		ApiBadRequestResponse({
 			description: badRequestDescription(
@@ -65,9 +68,10 @@ export const ApiCreateServerManagementTicket = () =>
 			description: `Creates an \`OPEN\` ticket that runs an Ansible playbook on the servers once it is approved. ${requiredRolesText(Role.ADMIN, Role.SERVER, Role.SERVER_APPROVER)} ${INFORMER_NOTE}`,
 		}),
 		ApiProtected(),
-		ApiCreatedResponse({
+		ApiCreatedResponseBody({
 			description: 'Ticket created.',
 			type: ServerManagementTicketEntity,
+			msg: 'Server management ticket created',
 		}),
 		ApiBadRequestResponse({ description: badRequestDescription() }),
 	);
@@ -79,9 +83,10 @@ export const ApiCreateKubernetesManifestTicket = () =>
 			description: `Creates an \`OPEN\` ticket that applies, creates or deletes a Kubernetes manifest once it is approved. ${requiredRolesText(Role.ADMIN, Role.KUBERNATES, Role.KUBERNATES_APPROVER)} ${INFORMER_NOTE}`,
 		}),
 		ApiProtected(),
-		ApiCreatedResponse({
+		ApiCreatedResponseBody({
 			description: 'Ticket created.',
 			type: KubernetesManifestTicketEntity,
+			msg: 'Kubernetes manifest ticket created',
 		}),
 		ApiBadRequestResponse({
 			description: badRequestDescription(
@@ -97,9 +102,10 @@ export const ApiCreateKubectlCommandTicket = () =>
 			description: `Creates an \`OPEN\` ticket that runs a kubectl command once it is approved. ${requiredRolesText(Role.ADMIN, Role.KUBERNATES, Role.KUBERNATES_APPROVER)} ${INFORMER_NOTE}`,
 		}),
 		ApiProtected(),
-		ApiCreatedResponse({
+		ApiCreatedResponseBody({
 			description: 'Ticket created.',
 			type: KubectlCommandTicketEntity,
+			msg: 'Kubectl command ticket created',
 		}),
 		ApiBadRequestResponse({ description: badRequestDescription() }),
 	);

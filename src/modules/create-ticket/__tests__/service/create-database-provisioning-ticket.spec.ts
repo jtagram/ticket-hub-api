@@ -77,7 +77,11 @@ describe('CreateTicketService.createDatabaseProvisioningTicket', () => {
 		const saved = { id: 1, number: 10 };
 		target.create.mockResolvedValue(saved);
 
-		await expect(service.createDatabaseProvisioningTicket(dto)).resolves.toBe(saved);
+		await expect(service.createDatabaseProvisioningTicket(dto)).resolves.toEqual({
+			ok: true,
+			msg: 'Database provisioning ticket created',
+			data: saved,
+		});
 	});
 
 	it('propagates the mapper error without calling the repository for a whitespace-only newDbName', async () => {

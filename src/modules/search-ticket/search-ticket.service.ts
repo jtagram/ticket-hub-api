@@ -1,4 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { ResponseBody } from '../../common/dto/response-body.dto';
+import { TicketResponseMapper } from '../../common/mapper/ticket-response.mapper';
 import { DatabaseManagementTicketEntity } from '../../common/database/database-management-ticket/database-management-ticket.entity';
 import { DatabaseManagementTicketsRepository } from '../../common/database/database-management-ticket/database-management-tickets.repository';
 import { DatabaseProvisioningTicketEntity } from '../../common/database/database-provisioning-ticket/database-provisioning-ticket.entity';
@@ -10,6 +12,12 @@ import { KubernetesManifestTicketsRepository } from '../../common/database/kuber
 import { KubectlCommandTicketEntity } from '../../common/database/kubectl-command-ticket/kubectl-command-ticket.entity';
 import { KubectlCommandTicketsRepository } from '../../common/database/kubectl-command-ticket/kubectl-command-tickets.repository';
 
+const DATABASE_MANAGEMENT_LABEL = 'Database management';
+const DATABASE_PROVISIONING_LABEL = 'Database provisioning';
+const SERVER_MANAGEMENT_LABEL = 'Server management';
+const KUBERNETES_MANIFEST_LABEL = 'Kubernetes manifest';
+const KUBECTL_COMMAND_LABEL = 'Kubectl command';
+
 @Injectable()
 export class SearchTicketService {
 	constructor(
@@ -20,69 +28,84 @@ export class SearchTicketService {
 		private readonly kubectlCommandTicketsRepository: KubectlCommandTicketsRepository,
 	) {}
 
-	async findAllDatabaseManagementTickets(): Promise<DatabaseManagementTicketEntity[]> {
-		return this.databaseManagementTicketsRepository.findAll();
+	async findAllDatabaseManagementTickets(): Promise<
+		ResponseBody<DatabaseManagementTicketEntity[]>
+	> {
+		const tickets = await this.databaseManagementTicketsRepository.findAll();
+		return TicketResponseMapper.toList(DATABASE_MANAGEMENT_LABEL, tickets);
 	}
 
-	async findAllDatabaseProvisioningTickets(): Promise<DatabaseProvisioningTicketEntity[]> {
-		return this.databaseProvisioningTicketsRepository.findAll();
+	async findAllDatabaseProvisioningTickets(): Promise<
+		ResponseBody<DatabaseProvisioningTicketEntity[]>
+	> {
+		const tickets = await this.databaseProvisioningTicketsRepository.findAll();
+		return TicketResponseMapper.toList(DATABASE_PROVISIONING_LABEL, tickets);
 	}
 
-	async findAllServerManagementTickets(): Promise<ServerManagementTicketEntity[]> {
-		return this.serverManagementTicketsRepository.findAll();
+	async findAllServerManagementTickets(): Promise<ResponseBody<ServerManagementTicketEntity[]>> {
+		const tickets = await this.serverManagementTicketsRepository.findAll();
+		return TicketResponseMapper.toList(SERVER_MANAGEMENT_LABEL, tickets);
 	}
 
-	async findAllKubernetesManifestTickets(): Promise<KubernetesManifestTicketEntity[]> {
-		return this.kubernetesManifestTicketsRepository.findAll();
+	async findAllKubernetesManifestTickets(): Promise<
+		ResponseBody<KubernetesManifestTicketEntity[]>
+	> {
+		const tickets = await this.kubernetesManifestTicketsRepository.findAll();
+		return TicketResponseMapper.toList(KUBERNETES_MANIFEST_LABEL, tickets);
 	}
 
-	async findAllKubectlCommandTickets(): Promise<KubectlCommandTicketEntity[]> {
-		return this.kubectlCommandTicketsRepository.findAll();
+	async findAllKubectlCommandTickets(): Promise<ResponseBody<KubectlCommandTicketEntity[]>> {
+		const tickets = await this.kubectlCommandTicketsRepository.findAll();
+		return TicketResponseMapper.toList(KUBECTL_COMMAND_LABEL, tickets);
 	}
 
 	async findDatabaseManagementTicketByNumber(
 		number: number,
-	): Promise<DatabaseManagementTicketEntity> {
+	): Promise<ResponseBody<DatabaseManagementTicketEntity>> {
 		const ticket = await this.databaseManagementTicketsRepository.findByNumber(number);
 		if (!ticket) {
 			throw new NotFoundException(`Database management ticket with number ${number} not found`);
 		}
-		return ticket;
+		return TicketResponseMapper.toFound(DATABASE_MANAGEMENT_LABEL, ticket);
 	}
 
 	async findDatabaseProvisioningTicketByNumber(
 		number: number,
-	): Promise<DatabaseProvisioningTicketEntity> {
+	): Promise<ResponseBody<DatabaseProvisioningTicketEntity>> {
 		const ticket = await this.databaseProvisioningTicketsRepository.findByNumber(number);
 		if (!ticket) {
 			throw new NotFoundException(`Database provisioning ticket with number ${number} not found`);
 		}
-		return ticket;
+		return TicketResponseMapper.toFound(DATABASE_PROVISIONING_LABEL, ticket);
 	}
 
-	async findServerManagementTicketByNumber(number: number): Promise<ServerManagementTicketEntity> {
+	async findServerManagementTicketByNumber(
+		number: number,
+	): Promise<ResponseBody<ServerManagementTicketEntity>> {
 		const ticket = await this.serverManagementTicketsRepository.findByNumber(number);
 		if (!ticket) {
 			throw new NotFoundException(`Server management ticket with number ${number} not found`);
 		}
-		return ticket;
+		return TicketResponseMapper.toFound(SERVER_MANAGEMENT_LABEL, ticket);
 	}
 
 	async findKubernetesManifestTicketByNumber(
 		number: number,
-	): Promise<KubernetesManifestTicketEntity> {
+	): Promise<ResponseBody<KubernetesManifestTicketEntity>> {
 		const ticket = await this.kubernetesManifestTicketsRepository.findByNumber(number);
 		if (!ticket) {
 			throw new NotFoundException(`Kubernetes manifest ticket with number ${number} not found`);
 		}
-		return ticket;
+		return TicketResponseMapper.toFound(KUBERNETES_MANIFEST_LABEL, ticket);
 	}
 
-	async findKubectlCommandTicketByNumber(number: number): Promise<KubectlCommandTicketEntity> {
+	async findKubectlCommandTicketByNumber(
+		number: number,
+	): Promise<ResponseBody<KubectlCommandTicketEntity>> {
 		const ticket = await this.kubectlCommandTicketsRepository.findByNumber(number);
 		if (!ticket) {
 			throw new NotFoundException(`Kubectl command ticket with number ${number} not found`);
 		}
-		return ticket;
+		return TicketResponseMapper.toFound(KUBECTL_COMMAND_LABEL, ticket);
 	}
 }

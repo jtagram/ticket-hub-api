@@ -6,7 +6,7 @@ import { Role } from '../../src/common/roles/role.enum';
 import { CreateTicketTestApp, createCreateTicketTestApp } from '../helpers/create-ticket-test-app';
 import { authorizationHeaderFor, authorizationHeaderForClaims } from '../helpers/test-auth';
 import { httpServerOf } from '../helpers/http-server';
-import { bodyOf, ErrorBody } from '../helpers/response-types';
+import { bodyOf, ErrorBody, SuccessBody } from '../helpers/response-types';
 
 const ENDPOINT = '/tickets/server/management';
 const USER_EMAIL = 'server.user@example.com';
@@ -54,7 +54,7 @@ describe('POST /tickets/server/management (e2e)', () => {
 		it('returns 201 with the persisted ticket and stores it in the database', async () => {
 			const response = await post(validPayload()).expect(201);
 
-			expect(response.body).toEqual(
+			expect(bodyOf<SuccessBody<unknown>>(response).data).toEqual(
 				expect.objectContaining({
 					id: expect.any(Number),
 					number: expect.any(Number),
@@ -71,8 +71,10 @@ describe('POST /tickets/server/management (e2e)', () => {
 
 			const rows = await testApp.dataSource.getRepository(ServerManagementTicketEntity).find();
 			expect(rows).toHaveLength(1);
-			expect(rows[0].id).toBe(bodyOf<ServerManagementTicketEntity>(response).id);
-			expect(rows[0].number).toBe(bodyOf<ServerManagementTicketEntity>(response).number);
+			expect(rows[0].id).toBe(bodyOf<SuccessBody<ServerManagementTicketEntity>>(response).data.id);
+			expect(rows[0].number).toBe(
+				bodyOf<SuccessBody<ServerManagementTicketEntity>>(response).data.number,
+			);
 			expect(rows[0].informer).toBe(USER_EMAIL);
 			expect(rows[0].status).toBe(TicketStatus.OPEN);
 			expect(rows[0].response).toBe('');
@@ -84,11 +86,11 @@ describe('POST /tickets/server/management (e2e)', () => {
 			const second = await post(validPayload({ subject: 'Second' })).expect(201);
 			const third = await post(validPayload({ subject: 'Third' })).expect(201);
 
-			expect(bodyOf<ServerManagementTicketEntity>(second).number).toBeGreaterThan(
-				bodyOf<ServerManagementTicketEntity>(first).number,
+			expect(bodyOf<SuccessBody<ServerManagementTicketEntity>>(second).data.number).toBeGreaterThan(
+				bodyOf<SuccessBody<ServerManagementTicketEntity>>(first).data.number,
 			);
-			expect(bodyOf<ServerManagementTicketEntity>(third).number).toBeGreaterThan(
-				bodyOf<ServerManagementTicketEntity>(second).number,
+			expect(bodyOf<SuccessBody<ServerManagementTicketEntity>>(third).data.number).toBeGreaterThan(
+				bodyOf<SuccessBody<ServerManagementTicketEntity>>(second).data.number,
 			);
 		});
 
@@ -97,7 +99,9 @@ describe('POST /tickets/server/management (e2e)', () => {
 				201,
 			);
 
-			expect(bodyOf<ServerManagementTicketEntity>(response).informer).toBe(USER_EMAIL);
+			expect(bodyOf<SuccessBody<ServerManagementTicketEntity>>(response).data.informer).toBe(
+				USER_EMAIL,
+			);
 			const rows = await testApp.dataSource.getRepository(ServerManagementTicketEntity).find();
 			expect(rows[0].informer).toBe(USER_EMAIL);
 		});
@@ -105,7 +109,7 @@ describe('POST /tickets/server/management (e2e)', () => {
 		it('returns 400 when the informer sent in the body is not a valid email', async () => {
 			const response = await post(validPayload({ informer: 'not-an-email' })).expect(400);
 
-			expect(bodyOf<ErrorBody>(response).message).toEqual(['informer must be an email']);
+			expect(bodyOf<ErrorBody>(response).msg).toBe('informer must be an email');
 		});
 	});
 
@@ -116,25 +120,22 @@ describe('POST /tickets/server/management (e2e)', () => {
 
 			const response = await post(payload).expect(400);
 
-			expect(bodyOf<ErrorBody>(response).statusCode).toBe(400);
-			expect(bodyOf<ErrorBody>(response).error).toBe('Bad Request');
-			expect(bodyOf<ErrorBody>(response).message).toEqual(
-				expect.arrayContaining(['subject must be a string']),
-			);
+			expect(response.status).toBe(400);
+			expect(bodyOf<ErrorBody>(response).msg).toContain('subject must be a string');
 		});
 
 		it('returns 400 when a field exceeds its maximum length', async () => {
 			const response = await post(validPayload({ subject: 'a'.repeat(501) })).expect(400);
 
-			expect(bodyOf<ErrorBody>(response).message).toEqual([
+			expect(bodyOf<ErrorBody>(response).msg).toBe(
 				'subject must be shorter than or equal to 500 characters',
-			]);
+			);
 		});
 
 		it('returns 400 when the body has an unknown property', async () => {
 			const response = await post(validPayload({ unexpected: 'value' })).expect(400);
 
-			expect(bodyOf<ErrorBody>(response).message).toEqual(['property unexpected should not exist']);
+			expect(bodyOf<ErrorBody>(response).msg).toBe('property unexpected should not exist');
 		});
 
 		it('does not require the informer in the body (the token email is used)', async () => {
@@ -143,7 +144,9 @@ describe('POST /tickets/server/management (e2e)', () => {
 
 			const response = await post(payload).expect(201);
 
-			expect(bodyOf<ServerManagementTicketEntity>(response).informer).toBe(USER_EMAIL);
+			expect(bodyOf<SuccessBody<ServerManagementTicketEntity>>(response).data.informer).toBe(
+				USER_EMAIL,
+			);
 			const rows = await testApp.dataSource.getRepository(ServerManagementTicketEntity).find();
 			expect(rows).toHaveLength(1);
 			expect(rows[0].informer).toBe(USER_EMAIL);
@@ -152,17 +155,13 @@ describe('POST /tickets/server/management (e2e)', () => {
 		it('returns 400 when the informer is present but empty', async () => {
 			const response = await post(validPayload({ informer: '' })).expect(400);
 
-			expect(bodyOf<ErrorBody>(response).message).toEqual(
-				expect.arrayContaining(['informer must be an email']),
-			);
+			expect(bodyOf<ErrorBody>(response).msg).toContain('informer must be an email');
 		});
 
 		it('returns 400 when a field has the wrong type', async () => {
 			const response = await post(validPayload({ codeAnsible: 123 })).expect(400);
 
-			expect(bodyOf<ErrorBody>(response).message).toEqual(
-				expect.arrayContaining(['codeAnsible must be a string']),
-			);
+			expect(bodyOf<ErrorBody>(response).msg).toContain('codeAnsible must be a string');
 		});
 
 		it('does not persist anything when validation fails', async () => {
@@ -175,7 +174,7 @@ describe('POST /tickets/server/management (e2e)', () => {
 		it('returns 400 when a required field is whitespace only', async () => {
 			const response = await post(validPayload({ subject: '   ' })).expect(400);
 
-			expect(bodyOf<ErrorBody>(response).message).toEqual(['subject must not be blank']);
+			expect(bodyOf<ErrorBody>(response).msg).toBe('subject must not be blank');
 			const count = await testApp.dataSource.getRepository(ServerManagementTicketEntity).count();
 			expect(count).toBe(0);
 		});
@@ -183,7 +182,7 @@ describe('POST /tickets/server/management (e2e)', () => {
 		it('returns 400 when codeAnsible is whitespace only', async () => {
 			const response = await post(validPayload({ codeAnsible: '   ' })).expect(400);
 
-			expect(bodyOf<ErrorBody>(response).message).toEqual(['codeAnsible must not be blank']);
+			expect(bodyOf<ErrorBody>(response).msg).toBe('codeAnsible must not be blank');
 			const count = await testApp.dataSource.getRepository(ServerManagementTicketEntity).count();
 			expect(count).toBe(0);
 		});
@@ -191,7 +190,7 @@ describe('POST /tickets/server/management (e2e)', () => {
 		it('returns 400 when description is made only of tabs and line breaks', async () => {
 			const response = await post(validPayload({ description: ' \t\r\n ' })).expect(400);
 
-			expect(bodyOf<ErrorBody>(response).message).toEqual(['description must not be blank']);
+			expect(bodyOf<ErrorBody>(response).msg).toBe('description must not be blank');
 			const count = await testApp.dataSource.getRepository(ServerManagementTicketEntity).count();
 			expect(count).toBe(0);
 		});
@@ -201,7 +200,7 @@ describe('POST /tickets/server/management (e2e)', () => {
 		it('returns 401 when the request has no bearer token', async () => {
 			const response = await post(validPayload(), null).expect(401);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe('Missing or malformed bearer token');
+			expect(bodyOf<ErrorBody>(response).msg).toBe('Missing or malformed bearer token');
 		});
 
 		it('returns 401 when the token is signed with an unknown key', async () => {
@@ -210,7 +209,7 @@ describe('POST /tickets/server/management (e2e)', () => {
 				'Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6Im90aGVyIn0.e30.invalid',
 			).expect(401);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe('Invalid or expired token');
+			expect(bodyOf<ErrorBody>(response).msg).toBe('Invalid or expired token');
 		});
 
 		it('returns 403 when the user only has the COMMON_USER role', async () => {
@@ -222,7 +221,7 @@ describe('POST /tickets/server/management (e2e)', () => {
 				}),
 			).expect(403);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe('You do not have the required role');
+			expect(bodyOf<ErrorBody>(response).msg).toBe('You do not have the required role');
 		});
 
 		it('returns 403 when the user only has roles of another domain', async () => {
@@ -245,7 +244,7 @@ describe('POST /tickets/server/management (e2e)', () => {
 				}),
 			).expect(403);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe(
+			expect(bodyOf<ErrorBody>(response).msg).toBe(
 				'This token was not issued for the ticket-hub-api application',
 			);
 		});
@@ -256,7 +255,7 @@ describe('POST /tickets/server/management (e2e)', () => {
 				authorizationHeaderForClaims({ email: 'user@example.com' }),
 			).expect(403);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe(
+			expect(bodyOf<ErrorBody>(response).msg).toBe(
 				'The token does not carry application information',
 			);
 		});

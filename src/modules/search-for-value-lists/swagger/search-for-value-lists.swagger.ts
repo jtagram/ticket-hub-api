@@ -2,10 +2,10 @@ import { applyDecorators } from '@nestjs/common';
 import {
 	ApiBadRequestResponse,
 	ApiInternalServerErrorResponse,
-	ApiOkResponse,
 	ApiOperation,
 } from '@nestjs/swagger';
 import { ApiProtected, requiredRolesText } from '../../../common/swagger/api-protected.decorator';
+import { ApiOkResponseBody } from '../../../common/swagger/api-response-body.decorator';
 import { Role } from '../../../common/roles/role.enum';
 import { ValueListItemResponse } from '../value-list-item.response';
 
@@ -13,7 +13,7 @@ const UNEXPECTED_ERROR_CASE =
 	'- `An unexpected error occurred. Please try again later.`: the service login against iam-api failed or another unexpected error occurred.';
 
 const INFRA_HUB_RELAY_NOTE =
-	'If infra-hub-api answers with an error, its status and body are relayed as they are.';
+	'If infra-hub-api answers with an error, its status and `msg` are relayed in the error envelope.';
 
 export const ApiFindAssignees = () =>
 	applyDecorators(
@@ -30,10 +30,11 @@ export const ApiFindAssignees = () =>
 			)}`,
 		}),
 		ApiProtected(),
-		ApiOkResponse({
+		ApiOkResponseBody({
 			description: 'Assignees retrieved.',
 			type: ValueListItemResponse,
 			isArray: true,
+			msg: 'Assignees retrieved successfully',
 		}),
 		ApiInternalServerErrorResponse({
 			description: ['Unexpected failure:', UNEXPECTED_ERROR_CASE].join('\n'),
@@ -47,10 +48,11 @@ export const ApiFindDatabaseDeployments = () =>
 			description: `Returns the deployments of a Kubernetes namespace, as \`value\` and \`label\` pairs for a select input. ${INFRA_HUB_RELAY_NOTE} ${requiredRolesText(Role.ADMIN, Role.DATABASE, Role.DATABASE_APPROVER)}`,
 		}),
 		ApiProtected(),
-		ApiOkResponse({
+		ApiOkResponseBody({
 			description: 'Deployments retrieved.',
 			type: ValueListItemResponse,
 			isArray: true,
+			msg: 'Database deployments retrieved successfully',
 		}),
 		ApiBadRequestResponse({
 			description: [
@@ -72,10 +74,11 @@ export const ApiFindDatabaseNames = () =>
 			description: `Returns the databases of a deployment, as \`value\` and \`label\` pairs for a select input. ${INFRA_HUB_RELAY_NOTE} ${requiredRolesText(Role.ADMIN, Role.DATABASE, Role.DATABASE_APPROVER)}`,
 		}),
 		ApiProtected(),
-		ApiOkResponse({
+		ApiOkResponseBody({
 			description: 'Database names retrieved.',
 			type: ValueListItemResponse,
 			isArray: true,
+			msg: 'Database names retrieved successfully',
 		}),
 		ApiBadRequestResponse({
 			description: [

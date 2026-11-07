@@ -50,7 +50,11 @@ describe('SearchTicketService.findAllKubernetesManifestTickets', () => {
 		];
 		target.findAll.mockResolvedValue(tickets);
 
-		await expect(service.findAllKubernetesManifestTickets()).resolves.toBe(tickets);
+		await expect(service.findAllKubernetesManifestTickets()).resolves.toEqual({
+			ok: true,
+			msg: 'Kubernetes manifest tickets retrieved',
+			data: tickets,
+		});
 
 		expect(target.findAll).toHaveBeenCalledTimes(1);
 		expect(target.findAll).toHaveBeenCalledWith();
@@ -59,7 +63,11 @@ describe('SearchTicketService.findAllKubernetesManifestTickets', () => {
 	it('returns an empty list when the repository has no tickets', async () => {
 		target.findAll.mockResolvedValue([]);
 
-		await expect(service.findAllKubernetesManifestTickets()).resolves.toEqual([]);
+		await expect(service.findAllKubernetesManifestTickets()).resolves.toEqual({
+			ok: true,
+			msg: 'Kubernetes manifest tickets retrieved',
+			data: [],
+		});
 	});
 
 	it('does not use any other repository', async () => {

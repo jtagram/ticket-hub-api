@@ -1,9 +1,15 @@
-/** Error body produced by Nest's exception layer / the global filter. */
+/** Error envelope produced by the exception filters: `{ ok: false, msg, data: null }`. */
 export interface ErrorBody {
-	statusCode: number;
-	error?: string;
-	/** `string[]` for ValidationPipe failures, `string` otherwise. */
-	message: string | string[];
+	ok: false;
+	msg: string;
+	data: null;
+}
+
+/** Success envelope of every endpoint (except `GET /health`). */
+export interface SuccessBody<T> {
+	ok: true;
+	msg: string;
+	data: T;
 }
 
 /**

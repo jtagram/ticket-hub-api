@@ -8,7 +8,7 @@ import { seedKubernetesManifestTicket, seedKubectlCommandTicket } from '../helpe
 import { createTicketTestApp, TicketTestApp } from '../helpers/ticket-test-app';
 import { httpServerOf } from '../helpers/http-server';
 import { KubernetesManifestTicketEntity } from '../../src/common/database/kubernetes-manifest-ticket/kubernetes-manifest-ticket.entity';
-import { bodyOf, ErrorBody } from '../helpers/response-types';
+import { bodyOf, ErrorBody, SuccessBody } from '../helpers/response-types';
 
 const ENDPOINT = '/tickets/kubernetes/manifest';
 const USER_EMAIL = 'user@example.com';
@@ -54,9 +54,13 @@ describe('GET /tickets/kubernetes/manifest/:number (e2e)', () => {
 
 			const response = await call(second.number).expect(200);
 
-			expect(bodyOf<KubernetesManifestTicketEntity>(response).id).toBe(second.id);
-			expect(bodyOf<KubernetesManifestTicketEntity>(response).number).toBe(second.number);
-			expect(bodyOf<KubernetesManifestTicketEntity>(response).subject).toBe('Second');
+			expect(bodyOf<SuccessBody<KubernetesManifestTicketEntity>>(response).data.id).toBe(second.id);
+			expect(bodyOf<SuccessBody<KubernetesManifestTicketEntity>>(response).data.number).toBe(
+				second.number,
+			);
+			expect(bodyOf<SuccessBody<KubernetesManifestTicketEntity>>(response).data.subject).toBe(
+				'Second',
+			);
 		});
 
 		it('returns an IN_PROGRESS ticket like any other', async () => {
@@ -66,7 +70,7 @@ describe('GET /tickets/kubernetes/manifest/:number (e2e)', () => {
 
 			const response = await call(ticket.number).expect(200);
 
-			expect(bodyOf<KubernetesManifestTicketEntity>(response).status).toBe(
+			expect(bodyOf<SuccessBody<KubernetesManifestTicketEntity>>(response).data.status).toBe(
 				TicketStatus.IN_PROGRESS,
 			);
 		});
@@ -78,7 +82,7 @@ describe('GET /tickets/kubernetes/manifest/:number (e2e)', () => {
 
 			const response = await call(second.number).expect(200);
 
-			expect(response.body).toEqual(
+			expect(bodyOf<SuccessBody<unknown>>(response).data).toEqual(
 				expect.objectContaining({
 					id: second.id,
 					number: second.number,
@@ -94,8 +98,12 @@ describe('GET /tickets/kubernetes/manifest/:number (e2e)', () => {
 					codeYaml: second.codeYaml,
 				}),
 			);
-			expect(typeof bodyOf<KubernetesManifestTicketEntity>(response).createdAt).toBe('string');
-			expect(typeof bodyOf<KubernetesManifestTicketEntity>(response).updatedAt).toBe('string');
+			expect(
+				typeof bodyOf<SuccessBody<KubernetesManifestTicketEntity>>(response).data.createdAt,
+			).toBe('string');
+			expect(
+				typeof bodyOf<SuccessBody<KubernetesManifestTicketEntity>>(response).data.updatedAt,
+			).toBe('string');
 		});
 
 		it('returns the ticket in whatever status it has', async () => {
@@ -106,24 +114,28 @@ describe('GET /tickets/kubernetes/manifest/:number (e2e)', () => {
 
 			const response = await call(approved.number).expect(200);
 
-			expect(bodyOf<KubernetesManifestTicketEntity>(response).status).toBe(TicketStatus.APPROVED);
-			expect(bodyOf<KubernetesManifestTicketEntity>(response).response).toBe('{"success":true}');
+			expect(bodyOf<SuccessBody<KubernetesManifestTicketEntity>>(response).data.status).toBe(
+				TicketStatus.APPROVED,
+			);
+			expect(bodyOf<SuccessBody<KubernetesManifestTicketEntity>>(response).data.response).toBe(
+				'{"success":true}',
+			);
 		});
 
 		it('returns 404 with the not-found message when the number does not exist', async () => {
 			const response = await call(999).expect(404);
 
 			expect(response.body).toEqual({
-				statusCode: 404,
-				message: 'Kubernetes manifest ticket with number 999 not found',
-				error: 'Not Found',
+				ok: false,
+				msg: 'Kubernetes manifest ticket with number 999 not found',
+				data: null,
 			});
 		});
 
 		it('returns 404 for a negative number', async () => {
 			const response = await call(-1).expect(404);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe(
+			expect(bodyOf<ErrorBody>(response).msg).toBe(
 				'Kubernetes manifest ticket with number -1 not found',
 			);
 		});
@@ -149,16 +161,16 @@ describe('GET /tickets/kubernetes/manifest/:number (e2e)', () => {
 			const response = await call('abc').expect(400);
 
 			expect(response.body).toEqual({
-				statusCode: 400,
-				message: 'Validation failed (numeric string is expected)',
-				error: 'Bad Request',
+				ok: false,
+				msg: 'Validation failed (numeric string is expected)',
+				data: null,
 			});
 		});
 
 		it('returns 400 when the number is a decimal', async () => {
 			const response = await call('1.5').expect(400);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe(
+			expect(bodyOf<ErrorBody>(response).msg).toBe(
 				'Validation failed (numeric string is expected)',
 			);
 		});
@@ -169,7 +181,7 @@ describe('GET /tickets/kubernetes/manifest/:number (e2e)', () => {
 			const ticket = await seedKubernetesManifestTicket(testApp.dataSource);
 			const response = await call(ticket.number, null).expect(401);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe('Missing or malformed bearer token');
+			expect(bodyOf<ErrorBody>(response).msg).toBe('Missing or malformed bearer token');
 		});
 
 		it('returns 401 when the token is signed with an unknown key', async () => {
@@ -179,7 +191,7 @@ describe('GET /tickets/kubernetes/manifest/:number (e2e)', () => {
 				'Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6Im90aGVyIn0.e30.invalid',
 			).expect(401);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe('Invalid or expired token');
+			expect(bodyOf<ErrorBody>(response).msg).toBe('Invalid or expired token');
 		});
 
 		it('returns 403 when the user only has the COMMON_USER role', async () => {
@@ -192,7 +204,7 @@ describe('GET /tickets/kubernetes/manifest/:number (e2e)', () => {
 				}),
 			).expect(403);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe('You do not have the required role');
+			expect(bodyOf<ErrorBody>(response).msg).toBe('You do not have the required role');
 		});
 
 		it('returns 403 when the user only has roles of another domain', async () => {
@@ -217,7 +229,7 @@ describe('GET /tickets/kubernetes/manifest/:number (e2e)', () => {
 				}),
 			).expect(403);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe(
+			expect(bodyOf<ErrorBody>(response).msg).toBe(
 				'This token was not issued for the ticket-hub-api application',
 			);
 		});
@@ -229,7 +241,7 @@ describe('GET /tickets/kubernetes/manifest/:number (e2e)', () => {
 				authorizationHeaderForClaims({ email: 'user@example.com' }),
 			).expect(403);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe(
+			expect(bodyOf<ErrorBody>(response).msg).toBe(
 				'The token does not carry application information',
 			);
 		});

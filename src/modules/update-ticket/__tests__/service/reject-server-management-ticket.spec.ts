@@ -193,7 +193,11 @@ describe('UpdateTicketService.rejectServerManagementTicket', () => {
 		target.findByNumber.mockResolvedValue(buildTicket());
 		target.update.mockResolvedValue(saved);
 
-		await expect(service.rejectServerManagementTicket(42)).resolves.toBe(saved);
+		await expect(service.rejectServerManagementTicket(42)).resolves.toEqual({
+			ok: true,
+			msg: 'Server management ticket rejected',
+			data: saved,
+		});
 	});
 
 	it('propagates a repository update rejection', async () => {

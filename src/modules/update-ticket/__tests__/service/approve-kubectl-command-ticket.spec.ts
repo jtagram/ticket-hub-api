@@ -255,7 +255,11 @@ describe('UpdateTicketService.approveKubectlCommandTicket', () => {
 		});
 		target.update.mockResolvedValue(saved);
 
-		await expect(service.approveKubectlCommandTicket(42)).resolves.toBe(saved);
+		await expect(service.approveKubectlCommandTicket(42)).resolves.toEqual({
+			ok: true,
+			msg: 'Kubectl command ticket approved',
+			data: saved,
+		});
 	});
 
 	describe('when infra-hub-api reports success false', () => {

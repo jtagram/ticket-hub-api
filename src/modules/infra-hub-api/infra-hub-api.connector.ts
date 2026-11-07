@@ -1,4 +1,4 @@
-import { HttpException, Injectable } from '@nestjs/common';
+import { BadGatewayException, HttpException, Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { isAxiosError } from 'axios';
@@ -7,6 +7,7 @@ import { AppUserAuthService } from '../../common/iam-api-auth/app-user-auth.serv
 import {
 	CreateDatabaseRequest,
 	ExecuteKubectlCommandRequest,
+	InfraHubApiEnvelope,
 	InfraHubApiResponse,
 	ListDatabasesResponse,
 	ListDeploymentsResponse,
@@ -14,6 +15,14 @@ import {
 	ManageDatabaseRequest,
 	ManageKubernetesManifestRequest,
 } from './infra-hub-api.types';
+
+const INVALID_ENVELOPE_MESSAGE = 'infra-hub-api answered with an unexpected response';
+const UNKNOWN_ERROR_MESSAGE = 'infra-hub-api request failed';
+
+function errorMessageOf(body: unknown): string {
+	const msg = (body as { msg?: unknown } | null | undefined)?.msg;
+	return typeof msg === 'string' && msg.length > 0 ? msg : UNKNOWN_ERROR_MESSAGE;
+}
 
 @Injectable()
 export class InfraHubApiConnector {
@@ -31,19 +40,26 @@ export class InfraHubApiConnector {
 	// That's neither an HttpException nor a TypeORMError, so it used to slip
 	// past every specific exception filter and surface as a generic
 	// "unexpected error", hiding infra-hub-api's real status and message.
-	private async request<T>(call: () => Promise<{ data: T }>): Promise<T> {
+	// infra-hub-api errors are `{ ok: false, msg, data: null }`: the status is
+	// kept and `msg` becomes the message of the HttpException.
+	private async request<T>(call: () => Promise<{ data: InfraHubApiEnvelope<T> }>): Promise<T> {
+		let envelope: InfraHubApiEnvelope<T> | undefined;
 		try {
-			const response = await call();
-			return response.data;
+			envelope = (await call()).data;
 		} catch (error) {
 			if (isAxiosError(error) && error.response) {
-				throw new HttpException(
-					error.response.data as string | Record<string, unknown>,
-					error.response.status,
-				);
+				throw new HttpException(errorMessageOf(error.response.data), error.response.status);
 			}
 			throw error;
 		}
+
+		if (!envelope?.ok) {
+			throw new BadGatewayException(envelope?.msg || INVALID_ENVELOPE_MESSAGE);
+		}
+		if (envelope.data === null || envelope.data === undefined) {
+			throw new BadGatewayException(INVALID_ENVELOPE_MESSAGE);
+		}
+		return envelope.data;
 	}
 
 	async manageServerCommand(body: ManageCommandRequest): Promise<InfraHubApiResponse> {
@@ -52,7 +68,7 @@ export class InfraHubApiConnector {
 		);
 		return this.request(() =>
 			firstValueFrom(
-				this.httpService.post<InfraHubApiResponse>(
+				this.httpService.post<InfraHubApiEnvelope<InfraHubApiResponse>>(
 					`${this.baseUrl}/server-hub-api/manage-server`,
 					body,
 					{ headers: { Authorization: `Bearer ${accessToken}` } },
@@ -69,7 +85,7 @@ export class InfraHubApiConnector {
 		);
 		return this.request(() =>
 			firstValueFrom(
-				this.httpService.post<InfraHubApiResponse>(
+				this.httpService.post<InfraHubApiEnvelope<InfraHubApiResponse>>(
 					`${this.baseUrl}/kubernates-hub-api/manage-manifest`,
 					body,
 					{ headers: { Authorization: `Bearer ${accessToken}` } },
@@ -84,7 +100,7 @@ export class InfraHubApiConnector {
 		);
 		return this.request(() =>
 			firstValueFrom(
-				this.httpService.post<InfraHubApiResponse>(
+				this.httpService.post<InfraHubApiEnvelope<InfraHubApiResponse>>(
 					`${this.baseUrl}/kubernates-hub-api/execute-kubectl`,
 					body,
 					{ headers: { Authorization: `Bearer ${accessToken}` } },
@@ -99,7 +115,7 @@ export class InfraHubApiConnector {
 		);
 		return this.request(() =>
 			firstValueFrom(
-				this.httpService.post<InfraHubApiResponse>(
+				this.httpService.post<InfraHubApiEnvelope<InfraHubApiResponse>>(
 					`${this.baseUrl}/database-hub-api/manage-database`,
 					body,
 					{ headers: { Authorization: `Bearer ${accessToken}` } },
@@ -114,7 +130,7 @@ export class InfraHubApiConnector {
 		);
 		return this.request(() =>
 			firstValueFrom(
-				this.httpService.post<InfraHubApiResponse>(
+				this.httpService.post<InfraHubApiEnvelope<InfraHubApiResponse>>(
 					`${this.baseUrl}/database-hub-api/create-database`,
 					body,
 					{ headers: { Authorization: `Bearer ${accessToken}` } },
@@ -129,7 +145,7 @@ export class InfraHubApiConnector {
 		);
 		return this.request(() =>
 			firstValueFrom(
-				this.httpService.get<ListDeploymentsResponse>(
+				this.httpService.get<InfraHubApiEnvelope<ListDeploymentsResponse>>(
 					`${this.baseUrl}/kubernates-hub-api/list-deployments`,
 					{
 						params: { namespace },
@@ -146,7 +162,7 @@ export class InfraHubApiConnector {
 		);
 		return this.request(() =>
 			firstValueFrom(
-				this.httpService.get<ListDatabasesResponse>(
+				this.httpService.get<InfraHubApiEnvelope<ListDatabasesResponse>>(
 					`${this.baseUrl}/database-hub-api/list-databases`,
 					{
 						params: { namespace, deployment },

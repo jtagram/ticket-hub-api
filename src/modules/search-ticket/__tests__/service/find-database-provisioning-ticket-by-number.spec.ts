@@ -48,7 +48,11 @@ describe('SearchTicketService.findDatabaseProvisioningTicketByNumber', () => {
 		const ticket = { id: 1, number: 42 };
 		target.findByNumber.mockResolvedValue(ticket);
 
-		await expect(service.findDatabaseProvisioningTicketByNumber(42)).resolves.toBe(ticket);
+		await expect(service.findDatabaseProvisioningTicketByNumber(42)).resolves.toEqual({
+			ok: true,
+			msg: 'Database provisioning ticket retrieved',
+			data: ticket,
+		});
 
 		expect(target.findByNumber).toHaveBeenCalledTimes(1);
 		expect(target.findByNumber).toHaveBeenCalledWith(42);

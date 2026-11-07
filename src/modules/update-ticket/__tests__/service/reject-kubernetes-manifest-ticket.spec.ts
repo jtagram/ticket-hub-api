@@ -195,7 +195,11 @@ describe('UpdateTicketService.rejectKubernetesManifestTicket', () => {
 		target.findByNumber.mockResolvedValue(buildTicket());
 		target.update.mockResolvedValue(saved);
 
-		await expect(service.rejectKubernetesManifestTicket(42)).resolves.toBe(saved);
+		await expect(service.rejectKubernetesManifestTicket(42)).resolves.toEqual({
+			ok: true,
+			msg: 'Kubernetes manifest ticket rejected',
+			data: saved,
+		});
 	});
 
 	it('propagates a repository update rejection', async () => {

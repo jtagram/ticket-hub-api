@@ -78,7 +78,11 @@ describe('CreateTicketService.createKubernetesManifestTicket', () => {
 		const saved = { id: 1, number: 10 };
 		target.create.mockResolvedValue(saved);
 
-		await expect(service.createKubernetesManifestTicket(dto)).resolves.toBe(saved);
+		await expect(service.createKubernetesManifestTicket(dto)).resolves.toEqual({
+			ok: true,
+			msg: 'Kubernetes manifest ticket created',
+			data: saved,
+		});
 	});
 
 	it('propagates the mapper error without calling the repository for a whitespace-only codeYaml', async () => {

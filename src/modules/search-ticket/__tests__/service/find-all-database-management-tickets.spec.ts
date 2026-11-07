@@ -50,7 +50,11 @@ describe('SearchTicketService.findAllDatabaseManagementTickets', () => {
 		];
 		target.findAll.mockResolvedValue(tickets);
 
-		await expect(service.findAllDatabaseManagementTickets()).resolves.toBe(tickets);
+		await expect(service.findAllDatabaseManagementTickets()).resolves.toEqual({
+			ok: true,
+			msg: 'Database management tickets retrieved',
+			data: tickets,
+		});
 
 		expect(target.findAll).toHaveBeenCalledTimes(1);
 		expect(target.findAll).toHaveBeenCalledWith();
@@ -59,7 +63,11 @@ describe('SearchTicketService.findAllDatabaseManagementTickets', () => {
 	it('returns an empty list when the repository has no tickets', async () => {
 		target.findAll.mockResolvedValue([]);
 
-		await expect(service.findAllDatabaseManagementTickets()).resolves.toEqual([]);
+		await expect(service.findAllDatabaseManagementTickets()).resolves.toEqual({
+			ok: true,
+			msg: 'Database management tickets retrieved',
+			data: [],
+		});
 	});
 
 	it('does not use any other repository', async () => {

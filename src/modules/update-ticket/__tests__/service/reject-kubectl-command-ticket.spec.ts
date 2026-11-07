@@ -193,7 +193,11 @@ describe('UpdateTicketService.rejectKubectlCommandTicket', () => {
 		target.findByNumber.mockResolvedValue(buildTicket());
 		target.update.mockResolvedValue(saved);
 
-		await expect(service.rejectKubectlCommandTicket(42)).resolves.toBe(saved);
+		await expect(service.rejectKubectlCommandTicket(42)).resolves.toEqual({
+			ok: true,
+			msg: 'Kubectl command ticket rejected',
+			data: saved,
+		});
 	});
 
 	it('propagates a repository update rejection', async () => {

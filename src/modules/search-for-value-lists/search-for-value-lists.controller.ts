@@ -1,4 +1,5 @@
 import { Controller, Get, Query } from '@nestjs/common';
+import { ResponseBody } from '../../common/dto/response-body.dto';
 import { Roles } from '../../common/guards/roles.decorator';
 import { Role } from '../../common/roles/role.enum';
 import { SearchForValueListsService } from './search-for-value-lists.service';
@@ -30,7 +31,7 @@ export class SearchForValueListsController {
 		Role.KUBERNATES,
 		Role.KUBERNATES_APPROVER,
 	)
-	findAssignees(): Promise<ValueListItemResponse[]> {
+	findAssignees(): Promise<ResponseBody<ValueListItemResponse[]>> {
 		return this.searchForValueListsService.findAssignees();
 	}
 
@@ -40,14 +41,16 @@ export class SearchForValueListsController {
 	@Roles(Role.ADMIN, Role.DATABASE, Role.DATABASE_APPROVER)
 	findDatabaseDeployments(
 		@Query() dto: FindDatabaseDeploymentsDto,
-	): Promise<ValueListItemResponse[]> {
+	): Promise<ResponseBody<ValueListItemResponse[]>> {
 		return this.searchForValueListsService.findDatabaseDeployments(dto);
 	}
 
 	@ApiFindDatabaseNames()
 	@Get('database-names')
 	@Roles(Role.ADMIN, Role.DATABASE, Role.DATABASE_APPROVER)
-	findDatabaseNames(@Query() dto: FindDatabaseNamesDto): Promise<ValueListItemResponse[]> {
+	findDatabaseNames(
+		@Query() dto: FindDatabaseNamesDto,
+	): Promise<ResponseBody<ValueListItemResponse[]>> {
 		return this.searchForValueListsService.findDatabaseNames(dto);
 	}
 }

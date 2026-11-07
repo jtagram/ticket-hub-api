@@ -48,7 +48,11 @@ describe('SearchTicketService.findKubernetesManifestTicketByNumber', () => {
 		const ticket = { id: 1, number: 42 };
 		target.findByNumber.mockResolvedValue(ticket);
 
-		await expect(service.findKubernetesManifestTicketByNumber(42)).resolves.toBe(ticket);
+		await expect(service.findKubernetesManifestTicketByNumber(42)).resolves.toEqual({
+			ok: true,
+			msg: 'Kubernetes manifest ticket retrieved',
+			data: ticket,
+		});
 
 		expect(target.findByNumber).toHaveBeenCalledTimes(1);
 		expect(target.findByNumber).toHaveBeenCalledWith(42);

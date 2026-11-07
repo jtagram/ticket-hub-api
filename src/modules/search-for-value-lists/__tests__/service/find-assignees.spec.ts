@@ -70,16 +70,20 @@ describe('SearchForValueListsService.findAssignees', () => {
 			{ id: 2, name: 'Alan', lastname: 'Turing', email: 'alan@example.com' },
 		]);
 
-		await expect(service.findAssignees()).resolves.toEqual([
-			{
-				value: 'ada@example.com',
-				label: 'Ada Lovelace (ada@example.com)',
-			},
-			{
-				value: 'alan@example.com',
-				label: 'Alan Turing (alan@example.com)',
-			},
-		]);
+		await expect(service.findAssignees()).resolves.toEqual({
+			ok: true,
+			msg: 'Assignees retrieved successfully',
+			data: [
+				{
+					value: 'ada@example.com',
+					label: 'Ada Lovelace (ada@example.com)',
+				},
+				{
+					value: 'alan@example.com',
+					label: 'Alan Turing (alan@example.com)',
+				},
+			],
+		});
 	});
 
 	it('keeps the order returned by iam-api', async () => {
@@ -90,13 +94,17 @@ describe('SearchForValueListsService.findAssignees', () => {
 
 		const result = await service.findAssignees();
 
-		expect(result.map((item) => item.value)).toEqual(['z@example.com', 'a@example.com']);
+		expect(result.data?.map((item) => item.value)).toEqual(['z@example.com', 'a@example.com']);
 	});
 
 	it('returns an empty list when iam-api finds no users', async () => {
 		iam.findInternalUsersByRole.mockResolvedValue([]);
 
-		await expect(service.findAssignees()).resolves.toEqual([]);
+		await expect(service.findAssignees()).resolves.toEqual({
+			ok: true,
+			msg: 'Assignees retrieved successfully',
+			data: [],
+		});
 	});
 
 	it('does not call infra-hub-api', async () => {

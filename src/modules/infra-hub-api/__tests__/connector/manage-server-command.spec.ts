@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
-import { HttpException } from '@nestjs/common';
+import { BadGatewayException, HttpException } from '@nestjs/common';
 import { AxiosError } from 'axios';
 import { of, throwError } from 'rxjs';
 import { AppUserAuthService } from '../../../../common/iam-api-auth/app-user-auth.service';
@@ -41,7 +41,7 @@ describe('InfraHubApiConnector.manageServerCommand', () => {
 	const body = { numberOfTickets: 2, playbook: 'restart.yml' } as never;
 
 	it('asks for a token of the infra-hub application', async () => {
-		post.mockReturnValue(of({ data: {} }));
+		post.mockReturnValue(of({ data: { ok: true, msg: 'ok', data: {} } }));
 
 		await connector.manageServerCommand(body);
 
@@ -49,7 +49,7 @@ describe('InfraHubApiConnector.manageServerCommand', () => {
 	});
 
 	it('POSTs to /server-hub-api/manage-server with the bearer token and the body', async () => {
-		post.mockReturnValue(of({ data: {} }));
+		post.mockReturnValue(of({ data: { ok: true, msg: 'ok', data: {} } }));
 
 		await connector.manageServerCommand(body);
 
@@ -59,15 +59,15 @@ describe('InfraHubApiConnector.manageServerCommand', () => {
 		});
 	});
 
-	it('returns the response data', async () => {
+	it('unwraps the envelope and returns its data', async () => {
 		const data = { executionResult: { success: true }, logId: 'log-1' };
-		post.mockReturnValue(of({ data }));
+		post.mockReturnValue(of({ data: { ok: true, msg: 'ok', data } }));
 
 		await expect(connector.manageServerCommand(body)).resolves.toBe(data);
 	});
 
-	it('maps an infra-hub-api error response to an HttpException with the same status and body', async () => {
-		const response = { status: 422, data: { message: 'invalid playbook' } };
+	it('maps an infra-hub-api error response to an HttpException with the same status and the envelope message', async () => {
+		const response = { status: 422, data: { ok: false, msg: 'invalid playbook', data: null } };
 		post.mockReturnValue(
 			throwError(
 				() =>
@@ -85,9 +85,50 @@ describe('InfraHubApiConnector.manageServerCommand', () => {
 
 		expect(failure).toBeInstanceOf(HttpException);
 		expect((failure as HttpException).getStatus()).toBe(422);
-		expect((failure as HttpException).getResponse()).toEqual({
-			message: 'invalid playbook',
-		});
+		expect((failure as HttpException).getResponse()).toBe('invalid playbook');
+	});
+
+	it('uses a generic message when the error body is not an envelope', async () => {
+		const response = { status: 500, data: '<html>boom</html>' };
+		post.mockReturnValue(
+			throwError(
+				() =>
+					new AxiosError(
+						'Request failed',
+						'ERR_BAD_REQUEST',
+						undefined,
+						undefined,
+						response as never,
+					),
+			),
+		);
+
+		const failure = await connector.manageServerCommand(body).catch((e: unknown) => e);
+
+		expect(failure).toBeInstanceOf(HttpException);
+		expect((failure as HttpException).getStatus()).toBe(500);
+		expect((failure as HttpException).getResponse()).toBe('infra-hub-api request failed');
+	});
+
+	it('throws a 502 when a 2xx answer carries ok:false', async () => {
+		post.mockReturnValue(of({ data: { ok: false, msg: 'rejected upstream', data: null } }));
+
+		const failure = await connector.manageServerCommand(body).catch((e: unknown) => e);
+
+		expect(failure).toBeInstanceOf(BadGatewayException);
+		expect((failure as BadGatewayException).message).toBe('rejected upstream');
+	});
+
+	it('throws a 502 when a successful envelope has no data', async () => {
+		post.mockReturnValue(of({ data: { ok: true, msg: 'ok', data: null } }));
+
+		await expect(connector.manageServerCommand(body)).rejects.toBeInstanceOf(BadGatewayException);
+	});
+
+	it('throws a 502 when the answer is not an envelope', async () => {
+		post.mockReturnValue(of({ data: '' }));
+
+		await expect(connector.manageServerCommand(body)).rejects.toBeInstanceOf(BadGatewayException);
 	});
 
 	it('rethrows an axios error that has no response (network failure) untouched', async () => {

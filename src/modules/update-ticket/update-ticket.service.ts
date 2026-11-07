@@ -7,6 +7,8 @@ import {
 	NotFoundException,
 } from '@nestjs/common';
 import { Logger } from 'nestjs-pino';
+import { ResponseBody } from '../../common/dto/response-body.dto';
+import { TicketResponseMapper } from '../../common/mapper/ticket-response.mapper';
 import { DatabaseManagementTicketEntity } from '../../common/database/database-management-ticket/database-management-ticket.entity';
 import { DatabaseManagementTicketsRepository } from '../../common/database/database-management-ticket/database-management-tickets.repository';
 import { DatabaseProvisioningTicketEntity } from '../../common/database/database-provisioning-ticket/database-provisioning-ticket.entity';
@@ -40,6 +42,12 @@ interface ApprovalRepository<T> {
 	update(ticket: T): Promise<T>;
 }
 
+const DATABASE_MANAGEMENT_LABEL = 'Database management';
+const DATABASE_PROVISIONING_LABEL = 'Database provisioning';
+const SERVER_MANAGEMENT_LABEL = 'Server management';
+const KUBERNETES_MANIFEST_LABEL = 'Kubernetes manifest';
+const KUBECTL_COMMAND_LABEL = 'Kubectl command';
+
 function isInfraHubRejection(error: unknown): boolean {
 	if (!(error instanceof HttpException)) {
 		return false;
@@ -67,7 +75,9 @@ export class UpdateTicketService {
 		private readonly logger: Logger,
 	) {}
 
-	async approveDatabaseManagementTicket(number: number): Promise<DatabaseManagementTicketEntity> {
+	async approveDatabaseManagementTicket(
+		number: number,
+	): Promise<ResponseBody<DatabaseManagementTicketEntity>> {
 		const ticket = await this.databaseManagementTicketsRepository.findByNumber(number);
 		if (!ticket) {
 			throw new NotFoundException(`Database management ticket with number ${number} not found`);
@@ -87,7 +97,7 @@ export class UpdateTicketService {
 
 	async approveDatabaseProvisioningTicket(
 		number: number,
-	): Promise<DatabaseProvisioningTicketEntity> {
+	): Promise<ResponseBody<DatabaseProvisioningTicketEntity>> {
 		const ticket = await this.databaseProvisioningTicketsRepository.findByNumber(number);
 		if (!ticket) {
 			throw new NotFoundException(`Database provisioning ticket with number ${number} not found`);
@@ -105,7 +115,9 @@ export class UpdateTicketService {
 		);
 	}
 
-	async approveServerManagementTicket(number: number): Promise<ServerManagementTicketEntity> {
+	async approveServerManagementTicket(
+		number: number,
+	): Promise<ResponseBody<ServerManagementTicketEntity>> {
 		const ticket = await this.serverManagementTicketsRepository.findByNumber(number);
 		if (!ticket) {
 			throw new NotFoundException(`Server management ticket with number ${number} not found`);
@@ -123,7 +135,9 @@ export class UpdateTicketService {
 		);
 	}
 
-	async approveKubernetesManifestTicket(number: number): Promise<KubernetesManifestTicketEntity> {
+	async approveKubernetesManifestTicket(
+		number: number,
+	): Promise<ResponseBody<KubernetesManifestTicketEntity>> {
 		const ticket = await this.kubernetesManifestTicketsRepository.findByNumber(number);
 		if (!ticket) {
 			throw new NotFoundException(`Kubernetes manifest ticket with number ${number} not found`);
@@ -141,7 +155,9 @@ export class UpdateTicketService {
 		);
 	}
 
-	async approveKubectlCommandTicket(number: number): Promise<KubectlCommandTicketEntity> {
+	async approveKubectlCommandTicket(
+		number: number,
+	): Promise<ResponseBody<KubectlCommandTicketEntity>> {
 		const ticket = await this.kubectlCommandTicketsRepository.findByNumber(number);
 		if (!ticket) {
 			throw new NotFoundException(`Kubectl command ticket with number ${number} not found`);
@@ -159,7 +175,9 @@ export class UpdateTicketService {
 		);
 	}
 
-	async rejectDatabaseManagementTicket(number: number): Promise<DatabaseManagementTicketEntity> {
+	async rejectDatabaseManagementTicket(
+		number: number,
+	): Promise<ResponseBody<DatabaseManagementTicketEntity>> {
 		const ticket = await this.databaseManagementTicketsRepository.findByNumber(number);
 		if (!ticket) {
 			throw new NotFoundException(`Database management ticket with number ${number} not found`);
@@ -167,12 +185,13 @@ export class UpdateTicketService {
 		this.assertOpen(ticket.status, number, 'rejected');
 
 		ticket.status = TicketStatus.REJECTED;
-		return this.databaseManagementTicketsRepository.update(ticket);
+		const rejected = await this.databaseManagementTicketsRepository.update(ticket);
+		return TicketResponseMapper.toRejected(DATABASE_MANAGEMENT_LABEL, rejected);
 	}
 
 	async rejectDatabaseProvisioningTicket(
 		number: number,
-	): Promise<DatabaseProvisioningTicketEntity> {
+	): Promise<ResponseBody<DatabaseProvisioningTicketEntity>> {
 		const ticket = await this.databaseProvisioningTicketsRepository.findByNumber(number);
 		if (!ticket) {
 			throw new NotFoundException(`Database provisioning ticket with number ${number} not found`);
@@ -180,10 +199,13 @@ export class UpdateTicketService {
 		this.assertOpen(ticket.status, number, 'rejected');
 
 		ticket.status = TicketStatus.REJECTED;
-		return this.databaseProvisioningTicketsRepository.update(ticket);
+		const rejected = await this.databaseProvisioningTicketsRepository.update(ticket);
+		return TicketResponseMapper.toRejected(DATABASE_PROVISIONING_LABEL, rejected);
 	}
 
-	async rejectServerManagementTicket(number: number): Promise<ServerManagementTicketEntity> {
+	async rejectServerManagementTicket(
+		number: number,
+	): Promise<ResponseBody<ServerManagementTicketEntity>> {
 		const ticket = await this.serverManagementTicketsRepository.findByNumber(number);
 		if (!ticket) {
 			throw new NotFoundException(`Server management ticket with number ${number} not found`);
@@ -191,10 +213,13 @@ export class UpdateTicketService {
 		this.assertOpen(ticket.status, number, 'rejected');
 
 		ticket.status = TicketStatus.REJECTED;
-		return this.serverManagementTicketsRepository.update(ticket);
+		const rejected = await this.serverManagementTicketsRepository.update(ticket);
+		return TicketResponseMapper.toRejected(SERVER_MANAGEMENT_LABEL, rejected);
 	}
 
-	async rejectKubernetesManifestTicket(number: number): Promise<KubernetesManifestTicketEntity> {
+	async rejectKubernetesManifestTicket(
+		number: number,
+	): Promise<ResponseBody<KubernetesManifestTicketEntity>> {
 		const ticket = await this.kubernetesManifestTicketsRepository.findByNumber(number);
 		if (!ticket) {
 			throw new NotFoundException(`Kubernetes manifest ticket with number ${number} not found`);
@@ -202,10 +227,13 @@ export class UpdateTicketService {
 		this.assertOpen(ticket.status, number, 'rejected');
 
 		ticket.status = TicketStatus.REJECTED;
-		return this.kubernetesManifestTicketsRepository.update(ticket);
+		const rejected = await this.kubernetesManifestTicketsRepository.update(ticket);
+		return TicketResponseMapper.toRejected(KUBERNETES_MANIFEST_LABEL, rejected);
 	}
 
-	async rejectKubectlCommandTicket(number: number): Promise<KubectlCommandTicketEntity> {
+	async rejectKubectlCommandTicket(
+		number: number,
+	): Promise<ResponseBody<KubectlCommandTicketEntity>> {
 		const ticket = await this.kubectlCommandTicketsRepository.findByNumber(number);
 		if (!ticket) {
 			throw new NotFoundException(`Kubectl command ticket with number ${number} not found`);
@@ -213,7 +241,8 @@ export class UpdateTicketService {
 		this.assertOpen(ticket.status, number, 'rejected');
 
 		ticket.status = TicketStatus.REJECTED;
-		return this.kubectlCommandTicketsRepository.update(ticket);
+		const rejected = await this.kubectlCommandTicketsRepository.update(ticket);
+		return TicketResponseMapper.toRejected(KUBECTL_COMMAND_LABEL, rejected);
 	}
 
 	/**
@@ -233,7 +262,7 @@ export class UpdateTicketService {
 		ticket: T,
 		ticketType: string,
 		execute: () => Promise<InfraHubApiResponse>,
-	): Promise<T> {
+	): Promise<ResponseBody<T>> {
 		const claimed = await repository.claimForApproval(ticket.number);
 		if (!claimed) {
 			throw new ConflictException(
@@ -250,7 +279,13 @@ export class UpdateTicketService {
 			throw error;
 		}
 
-		return this.settleApproval(repository, ticket, ticketType, infraHubResponse.executionResult);
+		const approved = await this.settleApproval(
+			repository,
+			ticket,
+			ticketType,
+			infraHubResponse.executionResult,
+		);
+		return TicketResponseMapper.toApproved(ticketType, approved);
 	}
 
 	/**

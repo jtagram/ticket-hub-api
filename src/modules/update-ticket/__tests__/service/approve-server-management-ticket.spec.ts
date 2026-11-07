@@ -255,7 +255,11 @@ describe('UpdateTicketService.approveServerManagementTicket', () => {
 		});
 		target.update.mockResolvedValue(saved);
 
-		await expect(service.approveServerManagementTicket(42)).resolves.toBe(saved);
+		await expect(service.approveServerManagementTicket(42)).resolves.toEqual({
+			ok: true,
+			msg: 'Server management ticket approved',
+			data: saved,
+		});
 	});
 
 	describe('when infra-hub-api reports success false', () => {

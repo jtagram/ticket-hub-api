@@ -7,6 +7,14 @@ export interface InfraHubApiExecutionResult {
 	errorCode?: string | number | null;
 }
 
+/**
+ * Envelope that wraps every infra-hub-api response (except `GET /health`).
+ * A failed playbook is still `ok: true`: it is reported in
+ * `data.executionResult.success`.
+ */
+export type InfraHubApiEnvelope<T> =
+	{ ok: true; msg: string; data: T } | { ok: false; msg: string; data: null };
+
 export interface InfraHubApiResponse {
 	executionResult: InfraHubApiExecutionResult;
 	logId: string;

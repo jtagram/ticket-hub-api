@@ -50,10 +50,14 @@ describe('SearchForValueListsService.findDatabaseNames', () => {
 				namespace: 'prod',
 				deployment: 'postgres-main',
 			}),
-		).resolves.toEqual([
-			{ value: 'orders', label: 'orders' },
-			{ value: 'billing', label: 'billing' },
-		]);
+		).resolves.toEqual({
+			ok: true,
+			msg: 'Database names retrieved successfully',
+			data: [
+				{ value: 'orders', label: 'orders' },
+				{ value: 'billing', label: 'billing' },
+			],
+		});
 	});
 
 	it('returns an empty list when the deployment has no databases', async () => {
@@ -61,7 +65,11 @@ describe('SearchForValueListsService.findDatabaseNames', () => {
 
 		await expect(
 			service.findDatabaseNames({ namespace: 'prod', deployment: 'empty' }),
-		).resolves.toEqual([]);
+		).resolves.toEqual({
+			ok: true,
+			msg: 'Database names retrieved successfully',
+			data: [],
+		});
 	});
 
 	it('does not call iam-api nor list deployments', async () => {

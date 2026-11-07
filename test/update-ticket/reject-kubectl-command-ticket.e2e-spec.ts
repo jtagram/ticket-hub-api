@@ -3,14 +3,18 @@ import request from 'supertest';
 import { KubectlCommandTicketEntity } from '../../src/common/database/kubectl-command-ticket/kubectl-command-ticket.entity';
 import { TicketStatus } from '../../src/common/database/ticket-status.enum';
 import { Role } from '../../src/common/roles/role.enum';
-import { InfraHubApiConnector } from '../../src/modules/infra-hub-api/infra-hub-api.connector';
 import { UpdateTicketModule } from '../../src/modules/update-ticket/update-ticket.module';
-import { callCounts, createInfraHubConnectorFake, resetFake } from '../helpers/outbound-fakes';
+import {
+	callCounts,
+	createInfraHubConnectorFake,
+	infraHubOverrides,
+	resetFake,
+} from '../helpers/outbound-fakes';
 import { authorizationHeaderFor, authorizationHeaderForClaims } from '../helpers/test-auth';
 import { seedKubectlCommandTicket, seedDatabaseManagementTicket } from '../helpers/ticket-fixtures';
 import { createTicketTestApp, TicketTestApp } from '../helpers/ticket-test-app';
 import { httpServerOf } from '../helpers/http-server';
-import { bodyOf, ErrorBody } from '../helpers/response-types';
+import { bodyOf, ErrorBody, SuccessBody } from '../helpers/response-types';
 
 const ENDPOINT = '/tickets/kubernetes/kubectl';
 const USER_EMAIL = 'approver@example.com';
@@ -26,7 +30,7 @@ describe('PATCH /tickets/kubernetes/kubectl/:number/reject (e2e)', () => {
 	beforeAll(async () => {
 		testApp = await createTicketTestApp({
 			modules: [UpdateTicketModule],
-			overrides: [{ provide: InfraHubApiConnector, useValue: infraHub }],
+			overrides: [...infraHubOverrides(infraHub)],
 		});
 	});
 
@@ -59,7 +63,7 @@ describe('PATCH /tickets/kubernetes/kubectl/:number/reject (e2e)', () => {
 
 			const response = await call(ticket.number).expect(200);
 
-			expect(response.body).toEqual(
+			expect(bodyOf<SuccessBody<unknown>>(response).data).toEqual(
 				expect.objectContaining({
 					id: ticket.id,
 					number: ticket.number,
@@ -125,7 +129,9 @@ describe('PATCH /tickets/kubernetes/kubectl/:number/reject (e2e)', () => {
 
 			const response = await call(ticket.number).expect(200);
 
-			expect(bodyOf<KubectlCommandTicketEntity>(response).response).toBe('previous note');
+			expect(bodyOf<SuccessBody<KubectlCommandTicketEntity>>(response).data.response).toBe(
+				'previous note',
+			);
 			const row = await findRow(ticket.id);
 			expect(row.response).toBe('previous note');
 		});
@@ -136,7 +142,7 @@ describe('PATCH /tickets/kubernetes/kubectl/:number/reject (e2e)', () => {
 			await call(ticket.number).expect(200);
 			const response = await call(ticket.number).expect(409);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe(
+			expect(bodyOf<ErrorBody>(response).msg).toBe(
 				'Ticket with number ' + ticket.number + ' is already REJECTED, it cannot be rejected',
 			);
 		});
@@ -145,9 +151,9 @@ describe('PATCH /tickets/kubernetes/kubectl/:number/reject (e2e)', () => {
 			const response = await call(999).expect(404);
 
 			expect(response.body).toEqual({
-				statusCode: 404,
-				message: 'Kubectl command ticket with number 999 not found',
-				error: 'Not Found',
+				ok: false,
+				msg: 'Kubectl command ticket with number 999 not found',
+				data: null,
 			});
 			expect(Object.values(callCounts(infraHub)).every((count) => count === 0)).toBe(true);
 		});
@@ -169,10 +175,9 @@ describe('PATCH /tickets/kubernetes/kubectl/:number/reject (e2e)', () => {
 			const response = await call(ticket.number).expect(409);
 
 			expect(response.body).toEqual({
-				statusCode: 409,
-				message:
-					'Ticket with number ' + ticket.number + ' is already APPROVED, it cannot be rejected',
-				error: 'Conflict',
+				ok: false,
+				msg: 'Ticket with number ' + ticket.number + ' is already APPROVED, it cannot be rejected',
+				data: null,
 			});
 			const row = await findRow(ticket.id);
 			expect(row.status).toBe(TicketStatus.APPROVED);
@@ -188,10 +193,10 @@ describe('PATCH /tickets/kubernetes/kubectl/:number/reject (e2e)', () => {
 			const response = await call(ticket.number).expect(409);
 
 			expect(response.body).toEqual({
-				statusCode: 409,
-				message:
+				ok: false,
+				msg:
 					'Ticket with number ' + ticket.number + ' is already IN_PROGRESS, it cannot be rejected',
-				error: 'Conflict',
+				data: null,
 			});
 			const row = await findRow(ticket.id);
 			expect(row.status).toBe(TicketStatus.IN_PROGRESS);
@@ -205,7 +210,7 @@ describe('PATCH /tickets/kubernetes/kubectl/:number/reject (e2e)', () => {
 
 			const response = await call(ticket.number).expect(409);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe(
+			expect(bodyOf<ErrorBody>(response).msg).toBe(
 				'Ticket with number ' + ticket.number + ' is already REJECTED, it cannot be rejected',
 			);
 			const row = await findRow(ticket.id);
@@ -219,9 +224,9 @@ describe('PATCH /tickets/kubernetes/kubectl/:number/reject (e2e)', () => {
 			const response = await call('abc').expect(400);
 
 			expect(response.body).toEqual({
-				statusCode: 400,
-				message: 'Validation failed (numeric string is expected)',
-				error: 'Bad Request',
+				ok: false,
+				msg: 'Validation failed (numeric string is expected)',
+				data: null,
 			});
 			expect(Object.values(callCounts(infraHub)).every((count) => count === 0)).toBe(true);
 		});
@@ -236,7 +241,7 @@ describe('PATCH /tickets/kubernetes/kubectl/:number/reject (e2e)', () => {
 			const ticket = await seedKubectlCommandTicket(testApp.dataSource);
 			const response = await call(ticket.number, null).expect(401);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe('Missing or malformed bearer token');
+			expect(bodyOf<ErrorBody>(response).msg).toBe('Missing or malformed bearer token');
 		});
 
 		it('returns 401 when the token is signed with an unknown key', async () => {
@@ -246,7 +251,7 @@ describe('PATCH /tickets/kubernetes/kubectl/:number/reject (e2e)', () => {
 				'Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6Im90aGVyIn0.e30.invalid',
 			).expect(401);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe('Invalid or expired token');
+			expect(bodyOf<ErrorBody>(response).msg).toBe('Invalid or expired token');
 		});
 
 		it('returns 403 when the user only has the COMMON_USER role', async () => {
@@ -259,7 +264,7 @@ describe('PATCH /tickets/kubernetes/kubectl/:number/reject (e2e)', () => {
 				}),
 			).expect(403);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe('You do not have the required role');
+			expect(bodyOf<ErrorBody>(response).msg).toBe('You do not have the required role');
 		});
 
 		it('returns 403 when the user only has roles of another domain', async () => {
@@ -284,7 +289,7 @@ describe('PATCH /tickets/kubernetes/kubectl/:number/reject (e2e)', () => {
 				}),
 			).expect(403);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe(
+			expect(bodyOf<ErrorBody>(response).msg).toBe(
 				'This token was not issued for the ticket-hub-api application',
 			);
 		});
@@ -296,7 +301,7 @@ describe('PATCH /tickets/kubernetes/kubectl/:number/reject (e2e)', () => {
 				authorizationHeaderForClaims({ email: 'user@example.com' }),
 			).expect(403);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe(
+			expect(bodyOf<ErrorBody>(response).msg).toBe(
 				'The token does not carry application information',
 			);
 		});
@@ -311,7 +316,7 @@ describe('PATCH /tickets/kubernetes/kubectl/:number/reject (e2e)', () => {
 				}),
 			).expect(403);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe('You do not have the required role');
+			expect(bodyOf<ErrorBody>(response).msg).toBe('You do not have the required role');
 		});
 
 		it('does not touch the ticket nor infra-hub-api when the user is forbidden', async () => {

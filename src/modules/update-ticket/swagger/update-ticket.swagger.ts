@@ -5,11 +5,11 @@ import {
 	ApiConflictResponse,
 	ApiInternalServerErrorResponse,
 	ApiNotFoundResponse,
-	ApiOkResponse,
 	ApiOperation,
 	ApiParam,
 } from '@nestjs/swagger';
 import { ApiProtected, requiredRolesText } from '../../../common/swagger/api-protected.decorator';
+import { ApiOkResponseBody } from '../../../common/swagger/api-response-body.decorator';
 import { Role } from '../../../common/roles/role.enum';
 import { DatabaseManagementTicketEntity } from '../../../common/database/database-management-ticket/database-management-ticket.entity';
 import { DatabaseProvisioningTicketEntity } from '../../../common/database/database-provisioning-ticket/database-provisioning-ticket.entity';
@@ -101,15 +101,16 @@ const approveTicket = (kind: TicketKind) =>
 			summary: `Approve a ${kind.summaryName} ticket`,
 			description: [
 				`Approves an \`OPEN\` ${kind.summaryName} ticket: it is claimed (\`IN_PROGRESS\`), infra-hub-api ${kind.approvalEffect} and, when the execution succeeds, the ticket becomes \`APPROVED\` and the execution result is saved in its \`response\`.`,
-				'If infra-hub-api rejects the request, its status and body are relayed as they are; the ticket stays `IN_PROGRESS` and is never moved back to `OPEN`.',
+				'If infra-hub-api rejects the request, its status and `msg` are relayed in the error envelope; the ticket stays `IN_PROGRESS` and is never moved back to `OPEN`.',
 				requiredRolesText(...kind.roles),
 			].join(' '),
 		}),
 		ApiProtected(),
 		numberParam(),
-		ApiOkResponse({
+		ApiOkResponseBody({
 			description: 'Ticket approved.',
 			type: kind.entity,
+			msg: `${kind.approvalName} ticket approved`,
 		}),
 		invalidNumberResponse(),
 		notFoundResponse(kind),
@@ -147,9 +148,10 @@ const rejectTicket = (kind: TicketKind) =>
 		}),
 		ApiProtected(),
 		numberParam(),
-		ApiOkResponse({
+		ApiOkResponseBody({
 			description: 'Ticket rejected.',
 			type: kind.entity,
+			msg: `${kind.approvalName} ticket rejected`,
 		}),
 		invalidNumberResponse(),
 		notFoundResponse(kind),

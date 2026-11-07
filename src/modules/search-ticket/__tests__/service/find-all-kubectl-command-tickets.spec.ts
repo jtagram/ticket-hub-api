@@ -50,7 +50,11 @@ describe('SearchTicketService.findAllKubectlCommandTickets', () => {
 		];
 		target.findAll.mockResolvedValue(tickets);
 
-		await expect(service.findAllKubectlCommandTickets()).resolves.toBe(tickets);
+		await expect(service.findAllKubectlCommandTickets()).resolves.toEqual({
+			ok: true,
+			msg: 'Kubectl command tickets retrieved',
+			data: tickets,
+		});
 
 		expect(target.findAll).toHaveBeenCalledTimes(1);
 		expect(target.findAll).toHaveBeenCalledWith();
@@ -59,7 +63,11 @@ describe('SearchTicketService.findAllKubectlCommandTickets', () => {
 	it('returns an empty list when the repository has no tickets', async () => {
 		target.findAll.mockResolvedValue([]);
 
-		await expect(service.findAllKubectlCommandTickets()).resolves.toEqual([]);
+		await expect(service.findAllKubectlCommandTickets()).resolves.toEqual({
+			ok: true,
+			msg: 'Kubectl command tickets retrieved',
+			data: [],
+		});
 	});
 
 	it('does not use any other repository', async () => {

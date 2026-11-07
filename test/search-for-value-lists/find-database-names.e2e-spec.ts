@@ -3,17 +3,17 @@ import { HttpException } from '@nestjs/common';
 import request from 'supertest';
 import { Role } from '../../src/common/roles/role.enum';
 import { IamApiConnector } from '../../src/modules/iam-api/iam-api.connector';
-import { InfraHubApiConnector } from '../../src/modules/infra-hub-api/infra-hub-api.connector';
 import { SearchForValueListsModule } from '../../src/modules/search-for-value-lists/search-for-value-lists.module';
 import {
 	createIamConnectorFake,
 	createInfraHubConnectorFake,
+	infraHubOverrides,
 	resetFake,
 } from '../helpers/outbound-fakes';
 import { authorizationHeaderFor, authorizationHeaderForClaims } from '../helpers/test-auth';
 import { createTicketTestApp, TicketTestApp } from '../helpers/ticket-test-app';
 import { httpServerOf } from '../helpers/http-server';
-import { bodyOf, ErrorBody } from '../helpers/response-types';
+import { bodyOf, ErrorBody, SuccessBody } from '../helpers/response-types';
 
 const ENDPOINT = '/search-for-value-lists/database-names';
 const USER_EMAIL = 'user@example.com';
@@ -30,10 +30,7 @@ describe('GET /search-for-value-lists/database-names (e2e)', () => {
 	beforeAll(async () => {
 		testApp = await createTicketTestApp({
 			modules: [SearchForValueListsModule],
-			overrides: [
-				{ provide: IamApiConnector, useValue: iam },
-				{ provide: InfraHubApiConnector, useValue: infraHub },
-			],
+			overrides: [{ provide: IamApiConnector, useValue: iam }, ...infraHubOverrides(infraHub)],
 		});
 	});
 
@@ -68,7 +65,7 @@ describe('GET /search-for-value-lists/database-names (e2e)', () => {
 
 			const response = await call().expect(200);
 
-			expect(response.body).toEqual([
+			expect(bodyOf<SuccessBody<unknown>>(response).data).toEqual([
 				{ value: 'orders', label: 'orders' },
 				{ value: 'billing', label: 'billing' },
 			]);
@@ -79,7 +76,7 @@ describe('GET /search-for-value-lists/database-names (e2e)', () => {
 
 			const response = await call().expect(200);
 
-			expect(response.body).toEqual([]);
+			expect(bodyOf<SuccessBody<unknown>>(response).data).toEqual([]);
 		});
 
 		it('asks infra-hub-api for the namespace and deployment received in the query string', async () => {
@@ -119,27 +116,23 @@ describe('GET /search-for-value-lists/database-names (e2e)', () => {
 		it('returns 400 when the namespace is missing', async () => {
 			const response = await call({ deployment: 'postgres-main' }).expect(400);
 
-			expect(bodyOf<ErrorBody>(response).statusCode).toBe(400);
-			expect(bodyOf<ErrorBody>(response).error).toBe('Bad Request');
-			expect(bodyOf<ErrorBody>(response).message).toEqual(
-				expect.arrayContaining(['namespace must be a string', 'namespace should not be empty']),
-			);
+			expect(response.status).toBe(400);
+			expect(bodyOf<ErrorBody>(response).msg).toContain('namespace must be a string');
+			expect(bodyOf<ErrorBody>(response).msg).toContain('namespace should not be empty');
 		});
 
 		it('returns 400 when the deployment is missing', async () => {
 			const response = await call({ namespace: 'prod' }).expect(400);
 
-			expect(bodyOf<ErrorBody>(response).message).toEqual(
-				expect.arrayContaining(['deployment must be a string', 'deployment should not be empty']),
-			);
+			expect(bodyOf<ErrorBody>(response).msg).toContain('deployment must be a string');
+			expect(bodyOf<ErrorBody>(response).msg).toContain('deployment should not be empty');
 		});
 
 		it('returns 400 listing both properties when the query string is empty', async () => {
 			const response = await call({}).expect(400);
 
-			expect(bodyOf<ErrorBody>(response).message).toEqual(
-				expect.arrayContaining(['namespace should not be empty', 'deployment should not be empty']),
-			);
+			expect(bodyOf<ErrorBody>(response).msg).toContain('namespace should not be empty');
+			expect(bodyOf<ErrorBody>(response).msg).toContain('deployment should not be empty');
 		});
 
 		it('returns 400 when the namespace is empty', async () => {
@@ -148,7 +141,7 @@ describe('GET /search-for-value-lists/database-names (e2e)', () => {
 				deployment: 'postgres-main',
 			}).expect(400);
 
-			expect(bodyOf<ErrorBody>(response).message).toEqual(['namespace should not be empty']);
+			expect(bodyOf<ErrorBody>(response).msg).toBe('namespace should not be empty');
 		});
 
 		it('returns 400 when the deployment is empty', async () => {
@@ -157,7 +150,7 @@ describe('GET /search-for-value-lists/database-names (e2e)', () => {
 				deployment: '',
 			}).expect(400);
 
-			expect(bodyOf<ErrorBody>(response).message).toEqual(['deployment should not be empty']);
+			expect(bodyOf<ErrorBody>(response).msg).toBe('deployment should not be empty');
 		});
 
 		it('returns 400 when the namespace exceeds 63 characters', async () => {
@@ -166,9 +159,9 @@ describe('GET /search-for-value-lists/database-names (e2e)', () => {
 				deployment: 'postgres-main',
 			}).expect(400);
 
-			expect(bodyOf<ErrorBody>(response).message).toEqual([
+			expect(bodyOf<ErrorBody>(response).msg).toBe(
 				'namespace must be shorter than or equal to 63 characters',
-			]);
+			);
 		});
 
 		it('returns 400 when the deployment exceeds 63 characters', async () => {
@@ -177,9 +170,9 @@ describe('GET /search-for-value-lists/database-names (e2e)', () => {
 				deployment: 'b'.repeat(64),
 			}).expect(400);
 
-			expect(bodyOf<ErrorBody>(response).message).toEqual([
+			expect(bodyOf<ErrorBody>(response).msg).toBe(
 				'deployment must be shorter than or equal to 63 characters',
-			]);
+			);
 		});
 
 		it('returns 400 when the query string has an unknown property', async () => {
@@ -189,7 +182,7 @@ describe('GET /search-for-value-lists/database-names (e2e)', () => {
 				unexpected: 'value',
 			}).expect(400);
 
-			expect(bodyOf<ErrorBody>(response).message).toEqual(['property unexpected should not exist']);
+			expect(bodyOf<ErrorBody>(response).msg).toBe('property unexpected should not exist');
 		});
 
 		it('does not call infra-hub-api when validation fails', async () => {
@@ -208,8 +201,9 @@ describe('GET /search-for-value-lists/database-names (e2e)', () => {
 			const response = await call().expect(404);
 
 			expect(response.body).toEqual({
-				statusCode: 404,
-				message: 'Deployment postgres-main not found',
+				ok: false,
+				msg: 'Deployment postgres-main not found',
+				data: null,
 			});
 		});
 
@@ -219,8 +213,9 @@ describe('GET /search-for-value-lists/database-names (e2e)', () => {
 			const response = await call().expect(500);
 
 			expect(response.body).toEqual({
-				statusCode: 500,
-				message: 'An unexpected error occurred. Please try again later.',
+				ok: false,
+				msg: 'An unexpected error occurred. Please try again later.',
+				data: null,
 			});
 		});
 	});
@@ -231,7 +226,7 @@ describe('GET /search-for-value-lists/database-names (e2e)', () => {
 		it('returns 401 when the request has no bearer token', async () => {
 			const response = await call(query, null).expect(401);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe('Missing or malformed bearer token');
+			expect(bodyOf<ErrorBody>(response).msg).toBe('Missing or malformed bearer token');
 			expect(infraHub.listDatabases).not.toHaveBeenCalled();
 		});
 
@@ -241,7 +236,7 @@ describe('GET /search-for-value-lists/database-names (e2e)', () => {
 				'Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6Im90aGVyIn0.e30.invalid',
 			).expect(401);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe('Invalid or expired token');
+			expect(bodyOf<ErrorBody>(response).msg).toBe('Invalid or expired token');
 		});
 
 		it('returns 403 when the user only has the COMMON_USER role', async () => {
@@ -253,7 +248,7 @@ describe('GET /search-for-value-lists/database-names (e2e)', () => {
 				}),
 			).expect(403);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe('You do not have the required role');
+			expect(bodyOf<ErrorBody>(response).msg).toBe('You do not have the required role');
 			expect(infraHub.listDatabases).not.toHaveBeenCalled();
 		});
 
@@ -267,7 +262,7 @@ describe('GET /search-for-value-lists/database-names (e2e)', () => {
 				}),
 			).expect(403);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe(
+			expect(bodyOf<ErrorBody>(response).msg).toBe(
 				'This token was not issued for the ticket-hub-api application',
 			);
 			expect(infraHub.listDatabases).not.toHaveBeenCalled();
@@ -279,7 +274,7 @@ describe('GET /search-for-value-lists/database-names (e2e)', () => {
 				authorizationHeaderForClaims({ email: 'user@example.com' }),
 			).expect(403);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe(
+			expect(bodyOf<ErrorBody>(response).msg).toBe(
 				'The token does not carry application information',
 			);
 			expect(infraHub.listDatabases).not.toHaveBeenCalled();
@@ -320,7 +315,7 @@ describe('GET /search-for-value-lists/database-names (e2e)', () => {
 				authorizationHeaderFor({ email: USER_EMAIL, roles: [Role.SERVER] }),
 			).expect(403);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe('You do not have the required role');
+			expect(bodyOf<ErrorBody>(response).msg).toBe('You do not have the required role');
 			expect(infraHub.listDatabases).not.toHaveBeenCalled();
 		});
 
@@ -333,7 +328,7 @@ describe('GET /search-for-value-lists/database-names (e2e)', () => {
 				}),
 			).expect(403);
 
-			expect(bodyOf<ErrorBody>(response).message).toBe('You do not have the required role');
+			expect(bodyOf<ErrorBody>(response).msg).toBe('You do not have the required role');
 			expect(infraHub.listDatabases).not.toHaveBeenCalled();
 		});
 	});

@@ -2,11 +2,11 @@ import { applyDecorators, Type } from '@nestjs/common';
 import {
 	ApiBadRequestResponse,
 	ApiNotFoundResponse,
-	ApiOkResponse,
 	ApiOperation,
 	ApiParam,
 } from '@nestjs/swagger';
 import { ApiProtected, requiredRolesText } from '../../../common/swagger/api-protected.decorator';
+import { ApiOkResponseBody } from '../../../common/swagger/api-response-body.decorator';
 import { Role } from '../../../common/roles/role.enum';
 import { DatabaseManagementTicketEntity } from '../../../common/database/database-management-ticket/database-management-ticket.entity';
 import { DatabaseProvisioningTicketEntity } from '../../../common/database/database-provisioning-ticket/database-provisioning-ticket.entity';
@@ -66,10 +66,11 @@ const findAllTickets = (kind: TicketKind) =>
 			description: `Returns every ${kind.summaryName} ticket. ${requiredRolesText(...kind.roles)}`,
 		}),
 		ApiProtected(),
-		ApiOkResponse({
+		ApiOkResponseBody({
 			description: 'Tickets retrieved.',
 			type: kind.entity,
 			isArray: true,
+			msg: `${kind.messageName} tickets retrieved`,
 		}),
 	);
 
@@ -86,9 +87,10 @@ const findTicketByNumber = (kind: TicketKind) =>
 			description: 'Ticket number.',
 			example: 42,
 		}),
-		ApiOkResponse({
+		ApiOkResponseBody({
 			description: 'Ticket retrieved.',
 			type: kind.entity,
+			msg: `${kind.messageName} ticket retrieved`,
 		}),
 		ApiBadRequestResponse({
 			description:

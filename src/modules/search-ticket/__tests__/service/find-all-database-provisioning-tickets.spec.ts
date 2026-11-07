@@ -50,7 +50,11 @@ describe('SearchTicketService.findAllDatabaseProvisioningTickets', () => {
 		];
 		target.findAll.mockResolvedValue(tickets);
 
-		await expect(service.findAllDatabaseProvisioningTickets()).resolves.toBe(tickets);
+		await expect(service.findAllDatabaseProvisioningTickets()).resolves.toEqual({
+			ok: true,
+			msg: 'Database provisioning tickets retrieved',
+			data: tickets,
+		});
 
 		expect(target.findAll).toHaveBeenCalledTimes(1);
 		expect(target.findAll).toHaveBeenCalledWith();
@@ -59,7 +63,11 @@ describe('SearchTicketService.findAllDatabaseProvisioningTickets', () => {
 	it('returns an empty list when the repository has no tickets', async () => {
 		target.findAll.mockResolvedValue([]);
 
-		await expect(service.findAllDatabaseProvisioningTickets()).resolves.toEqual([]);
+		await expect(service.findAllDatabaseProvisioningTickets()).resolves.toEqual({
+			ok: true,
+			msg: 'Database provisioning tickets retrieved',
+			data: [],
+		});
 	});
 
 	it('does not use any other repository', async () => {
